@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Season } from "./models";
 import { seedClub } from "./seed";
 import { ClubError, type Club } from "./types";
-import { enforce } from "./finance";
+import { enforce, normalize } from "./finance";
 import { logger } from "../lib/logger";
 
 let memory: Club | undefined;
@@ -30,16 +30,16 @@ export async function initializeStore() {
   logger.info("Saqfi: MongoDB data mode");
 }
 export async function readClub(): Promise<Club> {
-  if (dataMode === "demo") return structuredClone(memory!);
+  if (dataMode === "demo") return normalize(structuredClone(memory!));
   const doc = await Season.findOne({ id: "saqfi-demo-club" }).lean();
   if (!doc) throw new ClubError(503, "تعذر تحميل بيانات النادي", "Club data unavailable.");
-  return JSON.parse(JSON.stringify(doc)) as Club;
+  return normalize(JSON.parse(JSON.stringify(doc)) as Club);
 }
-export async function mutateClub(action: (club: Club) => void) {
+export async function mutateClub(action: (club: Club) => void | Promise<void>) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const club = await readClub();
     const revision = club.revision;
-    action(club);
+    await action(club);
     enforce(club);
     club.revision++;
     if (dataMode === "demo") {
@@ -48,10 +48,13 @@ export async function mutateClub(action: (club: Club) => void) {
       return;
     }
     const { id, revision: newRevision, club: name, clubEn, seasonStart, seasonEnd,
-      totalBudget, categories, contracts, payrolls, transactions } = club;
+      totalBudget, categories, contracts, payrolls, transactions,
+      adjustments, matches, bonusRules, approvalThreshold, requests } = club;
+    const audit = club.audit.slice(-500);
     const result = await Season.updateOne({ id, revision }, {
       $set: { revision: newRevision, club: name, clubEn, seasonStart, seasonEnd, totalBudget,
-        categories, contracts, payrolls, transactions },
+        categories, contracts, payrolls, transactions,
+        adjustments, matches, bonusRules, approvalThreshold, requests, audit },
     }, { runValidators: true });
     if (result.modifiedCount === 1) return;
   }

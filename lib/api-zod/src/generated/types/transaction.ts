@@ -12,4 +12,7 @@ export interface Transaction {
   description: string;
   date: string;
   type: string;
+  currency?: string;
+  originalAmount?: number;
+  rate?: number;
 }

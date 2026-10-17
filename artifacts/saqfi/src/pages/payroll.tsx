@@ -33,7 +33,10 @@ export default function Payroll({ session }: { session: Session }) {
   const isManager = session.role === 'manager';
   const month = s.nextPayrollMonth;
   const due = s.contracts.filter((c) => month && ym(c.start) <= month && ym(c.end) >= month);
-  const dueTotal = due.reduce((a, c) => a + Math.round(c.salary * 1000), 0) / 1000;
+  const netOf = (c: (typeof due)[number]) => Math.max(0, c.salary + c.pendingBonus - Math.min(c.pendingFine, c.salary + c.pendingBonus));
+  const dueTotal = due.reduce((a, c) => a + Math.round(netOf(c) * 1000), 0) / 1000;
+  const dueBonus = due.reduce((a, c) => a + c.pendingBonus, 0);
+  const dueFine = due.reduce((a, c) => a + c.pendingFine, 0);
   const history = [...s.payrolls].sort((a, b) => b.month.localeCompare(a.month));
   const notYet = !!month && month > s.today.slice(0, 7);
   const name = (id: string, fallback: string) => s.contracts.find((c) => c.id === id)?.[lang === 'ar' ? 'name' : 'nameEn'] ?? fallback;
@@ -65,6 +68,9 @@ export default function Payroll({ session }: { session: Session }) {
                 <Money v={dueTotal} exact className="font-semibold text-white [&_.text-muted-foreground]:text-white/60" />
               </div>
             )}
+            {month && (dueBonus > 0 || dueFine > 0) && (
+              <div className="mt-1 text-[14px] text-white/70">{t('يشمل مكافآت ', 'Includes bonuses ')}<Money v={dueBonus} className="text-white [&_.text-muted-foreground]:text-white/60" />{t(' وخصم غرامات ', ' and fines of ')}<Money v={dueFine} className="text-white [&_.text-muted-foreground]:text-white/60" /></div>
+            )}
             {notYet && <p className="mt-2 text-white/70">{t('ما يمديك تصرف هالشهر قبل لا يبدأ.', 'You can\'t pay this month before it starts.')}</p>}
           </div>
           {isManager && month && <RunBtn big />}
@@ -87,8 +93,16 @@ export default function Payroll({ session }: { session: Session }) {
             {due.map((c) => (
               <li key={c.id} className="flex items-center gap-3 py-3 sm:border-b sm:border-border">
                 <Avatar name={lang === 'ar' ? c.name : c.nameEn} size={36} />
-                <span className="flex-1 truncate">{lang === 'ar' ? c.name : c.nameEn}</span>
-                <Money v={c.salary} exact className="font-display font-semibold" />
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate">{lang === 'ar' ? c.name : c.nameEn}</span>
+                  {(c.pendingBonus > 0 || c.pendingFine > 0) && (
+                    <span className="flex flex-wrap gap-1.5 mt-0.5">
+                      {c.pendingBonus > 0 && <Chip tone="good">+<Money v={c.pendingBonus} exact unit={false} />&nbsp;{t('مكافأة', 'bonus')}</Chip>}
+                      {c.pendingFine > 0 && <Chip tone="bad">-<Money v={c.pendingFine} exact unit={false} />&nbsp;{t('غرامة', 'fine')}</Chip>}
+                    </span>
+                  )}
+                </span>
+                <Money v={netOf(c)} exact className="font-display font-semibold" />
               </li>
             ))}
           </ul>

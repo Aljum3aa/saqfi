@@ -50,6 +50,19 @@ export default function PlayerHome({ session }: { session: Session }) {
           </section>
         );
       })}
+      {s.adjustments.some((a) => !a.settledMonth) && (
+        <section className="panel p-5 md:p-7 mb-6" data-testid="card-own-pending">
+          <SectionTitle aside={t('مع راتبك الجاي', 'With your next salary')}>{t('مكافآت وغرامات', 'Bonuses & fines')}</SectionTitle>
+          <ul className="divide-y divide-border">
+            {s.adjustments.filter((a) => !a.settledMonth).map((a) => (
+              <li key={a.id} className="py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0"><div className="font-semibold">{a.reason}</div><div className="text-[13px] text-muted-foreground num">{dateLabel(a.date, lang)}</div></div>
+                <span className={cn('font-display font-semibold', a.kind === 'fine' ? 'text-destructive' : 'text-success')}>{a.kind === 'fine' ? '-' : '+'}<Money v={a.amount} exact /></span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section className="panel p-5 md:p-7">
         <SectionTitle aside={<span>{t('المستلم ', 'Received ')}<Money v={received} exact className="text-foreground font-semibold" /></span>}>{t('رواتبك', 'Your salaries')}</SectionTitle>
         {lines.length === 0 ? <p className="text-muted-foreground">{t('ما انصرف لك راتب للحين. بيظهر هني أول ما ينصرف.', 'No salary paid yet. It will show here once paid.')}</p> : (

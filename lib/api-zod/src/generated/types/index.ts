@@ -5,7 +5,20 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adjustment';
+export * from './adjustmentInput';
+export * from './adjustmentInputKind';
+export * from './adjustmentKind';
+export * from './advisorAnswer';
+export * from './advisorAnswerSource';
+export * from './advisorInput';
+export * from './advisorInputLang';
 export * from './alert';
+export * from './approvalRequest';
+export * from './approvalRequestReason';
+export * from './approvalRequestStatus';
+export * from './auditEntry';
+export * from './bonusRules';
 export * from './budgetInput';
 export * from './category';
 export * from './categoryInput';
@@ -13,14 +26,23 @@ export * from './clubState';
 export * from './clubStateMode';
 export * from './contract';
 export * from './contractInput';
+export * from './decisionInput';
 export * from './demoInput';
 export * from './demoInputRole';
 export * from './expenseInput';
 export * from './healthStatus';
+export * from './insight';
+export * from './insightTone';
+export * from './match';
+export * from './matchInput';
+export * from './matchResult';
 export * from './message';
 export * from './payroll';
 export * from './payrollInput';
 export * from './payrollLine';
+export * from './rates';
+export * from './ratesRates';
 export * from './session';
+export * from './thresholdInput';
 export * from './transaction';
 export * from './trend';

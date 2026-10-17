@@ -19,15 +19,23 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdjustmentInput,
+  AdvisorAnswer,
+  AdvisorInput,
+  BonusRules,
   BudgetInput,
   ClubState,
   ContractInput,
+  DecisionInput,
   DemoInput,
   ExpenseInput,
   HealthStatus,
+  MatchInput,
   Message,
   PayrollInput,
-  Session
+  Rates,
+  Session,
+  ThresholdInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -747,4 +755,718 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRunPayrollMutationOptions(options));
     }
+
+export const getCreateMatchUrl = () => {
+
+
+
+
+  return `/api/saqfi/matches`
+}
+
+export const createMatch = async (matchInput: MatchInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getCreateMatchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(matchInput)
+  }
+);}
+
+
+
+
+
+export const getCreateMatchMutationKey = () => ['createMatch'] as const;
+
+export const getCreateMatchMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMatch>>, TError,CreateMatchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMatch>>, TError,CreateMatchMutationVariables, TContext> => {
+
+const mutationKey = getCreateMatchMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMatch>>, CreateMatchMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMatch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMatchMutationResult = NonNullable<Awaited<ReturnType<typeof createMatch>>>
+    export type CreateMatchMutationBody = BodyType<MatchInput>
+    export type CreateMatchMutationError = ErrorType<unknown>
+    export type CreateMatchMutationVariables = {data: BodyType<MatchInput>}
+
+    export const useCreateMatch = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMatch>>, TError,CreateMatchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMatch>>,
+        TError,
+        CreateMatchMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateMatchMutationOptions(options));
+    }
+
+export const getCreateAdjustmentUrl = () => {
+
+
+
+
+  return `/api/saqfi/adjustments`
+}
+
+export const createAdjustment = async (adjustmentInput: AdjustmentInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getCreateAdjustmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adjustmentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdjustmentMutationKey = () => ['createAdjustment'] as const;
+
+export const getCreateAdjustmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdjustment>>, TError,CreateAdjustmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdjustment>>, TError,CreateAdjustmentMutationVariables, TContext> => {
+
+const mutationKey = getCreateAdjustmentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdjustment>>, CreateAdjustmentMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdjustment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdjustmentMutationResult = NonNullable<Awaited<ReturnType<typeof createAdjustment>>>
+    export type CreateAdjustmentMutationBody = BodyType<AdjustmentInput>
+    export type CreateAdjustmentMutationError = ErrorType<unknown>
+    export type CreateAdjustmentMutationVariables = {data: BodyType<AdjustmentInput>}
+
+    export const useCreateAdjustment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdjustment>>, TError,CreateAdjustmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdjustment>>,
+        TError,
+        CreateAdjustmentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateAdjustmentMutationOptions(options));
+    }
+
+export const getDeleteAdjustmentUrl = (id: string,) => {
+
+
+
+
+  return `/api/saqfi/adjustments/${id}`
+}
+
+export const deleteAdjustment = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+  return customFetch<Message>(getDeleteAdjustmentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAdjustmentMutationKey = () => ['deleteAdjustment'] as const;
+
+export const getDeleteAdjustmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdjustment>>, TError,DeleteAdjustmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdjustment>>, TError,DeleteAdjustmentMutationVariables, TContext> => {
+
+const mutationKey = getDeleteAdjustmentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdjustment>>, DeleteAdjustmentMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAdjustment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdjustmentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdjustment>>>
+
+    export type DeleteAdjustmentMutationError = ErrorType<unknown>
+    export type DeleteAdjustmentMutationVariables = {id: string}
+
+    export const useDeleteAdjustment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdjustment>>, TError,DeleteAdjustmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdjustment>>,
+        TError,
+        DeleteAdjustmentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteAdjustmentMutationOptions(options));
+    }
+
+export const getSaveBonusRulesUrl = () => {
+
+
+
+
+  return `/api/saqfi/bonus-rules`
+}
+
+export const saveBonusRules = async (bonusRules: BonusRules, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getSaveBonusRulesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(bonusRules)
+  }
+);}
+
+
+
+
+
+export const getSaveBonusRulesMutationKey = () => ['saveBonusRules'] as const;
+
+export const getSaveBonusRulesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveBonusRules>>, TError,SaveBonusRulesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveBonusRules>>, TError,SaveBonusRulesMutationVariables, TContext> => {
+
+const mutationKey = getSaveBonusRulesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveBonusRules>>, SaveBonusRulesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveBonusRules(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveBonusRulesMutationResult = NonNullable<Awaited<ReturnType<typeof saveBonusRules>>>
+    export type SaveBonusRulesMutationBody = BodyType<BonusRules>
+    export type SaveBonusRulesMutationError = ErrorType<unknown>
+    export type SaveBonusRulesMutationVariables = {data: BodyType<BonusRules>}
+
+    export const useSaveBonusRules = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveBonusRules>>, TError,SaveBonusRulesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveBonusRules>>,
+        TError,
+        SaveBonusRulesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveBonusRulesMutationOptions(options));
+    }
+
+export const getSaveApprovalThresholdUrl = () => {
+
+
+
+
+  return `/api/saqfi/approval-threshold`
+}
+
+export const saveApprovalThreshold = async (thresholdInput: ThresholdInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getSaveApprovalThresholdUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(thresholdInput)
+  }
+);}
+
+
+
+
+
+export const getSaveApprovalThresholdMutationKey = () => ['saveApprovalThreshold'] as const;
+
+export const getSaveApprovalThresholdMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveApprovalThreshold>>, TError,SaveApprovalThresholdMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveApprovalThreshold>>, TError,SaveApprovalThresholdMutationVariables, TContext> => {
+
+const mutationKey = getSaveApprovalThresholdMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveApprovalThreshold>>, SaveApprovalThresholdMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveApprovalThreshold(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveApprovalThresholdMutationResult = NonNullable<Awaited<ReturnType<typeof saveApprovalThreshold>>>
+    export type SaveApprovalThresholdMutationBody = BodyType<ThresholdInput>
+    export type SaveApprovalThresholdMutationError = ErrorType<unknown>
+    export type SaveApprovalThresholdMutationVariables = {data: BodyType<ThresholdInput>}
+
+    export const useSaveApprovalThreshold = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveApprovalThreshold>>, TError,SaveApprovalThresholdMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveApprovalThreshold>>,
+        TError,
+        SaveApprovalThresholdMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveApprovalThresholdMutationOptions(options));
+    }
+
+export const getCreateRequestUrl = () => {
+
+
+
+
+  return `/api/saqfi/requests`
+}
+
+export const createRequest = async (expenseInput: ExpenseInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getCreateRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(expenseInput)
+  }
+);}
+
+
+
+
+
+export const getCreateRequestMutationKey = () => ['createRequest'] as const;
+
+export const getCreateRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRequest>>, TError,CreateRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRequest>>, TError,CreateRequestMutationVariables, TContext> => {
+
+const mutationKey = getCreateRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRequest>>, CreateRequestMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createRequest>>>
+    export type CreateRequestMutationBody = BodyType<ExpenseInput>
+    export type CreateRequestMutationError = ErrorType<unknown>
+    export type CreateRequestMutationVariables = {data: BodyType<ExpenseInput>}
+
+    export const useCreateRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRequest>>, TError,CreateRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRequest>>,
+        TError,
+        CreateRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateRequestMutationOptions(options));
+    }
+
+export const getDecideRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/saqfi/requests/${id}/decision`
+}
+
+export const decideRequest = async (id: string,
+    decisionInput: DecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getDecideRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(decisionInput)
+  }
+);}
+
+
+
+
+
+export const getDecideRequestMutationKey = () => ['decideRequest'] as const;
+
+export const getDecideRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideRequest>>, TError,DecideRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decideRequest>>, TError,DecideRequestMutationVariables, TContext> => {
+
+const mutationKey = getDecideRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decideRequest>>, DecideRequestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  decideRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecideRequestMutationResult = NonNullable<Awaited<ReturnType<typeof decideRequest>>>
+    export type DecideRequestMutationBody = BodyType<DecisionInput>
+    export type DecideRequestMutationError = ErrorType<unknown>
+    export type DecideRequestMutationVariables = {id: string;data: BodyType<DecisionInput>}
+
+    export const useDecideRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideRequest>>, TError,DecideRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof decideRequest>>,
+        TError,
+        DecideRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDecideRequestMutationOptions(options));
+    }
+
+export const getAskAdvisorUrl = () => {
+
+
+
+
+  return `/api/saqfi/advisor`
+}
+
+export const askAdvisor = async (advisorInput: AdvisorInput, options?: Parameters<typeof customFetch>[1]): Promise<AdvisorAnswer> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdvisorAnswer>(getAskAdvisorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(advisorInput)
+  }
+);}
+
+
+
+
+
+export const getAskAdvisorMutationKey = () => ['askAdvisor'] as const;
+
+export const getAskAdvisorMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askAdvisor>>, TError,AskAdvisorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof askAdvisor>>, TError,AskAdvisorMutationVariables, TContext> => {
+
+const mutationKey = getAskAdvisorMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askAdvisor>>, AskAdvisorMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  askAdvisor(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AskAdvisorMutationResult = NonNullable<Awaited<ReturnType<typeof askAdvisor>>>
+    export type AskAdvisorMutationBody = BodyType<AdvisorInput>
+    export type AskAdvisorMutationError = ErrorType<unknown>
+    export type AskAdvisorMutationVariables = {data: BodyType<AdvisorInput>}
+
+    export const useAskAdvisor = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askAdvisor>>, TError,AskAdvisorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof askAdvisor>>,
+        TError,
+        AskAdvisorMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAskAdvisorMutationOptions(options));
+    }
+
+export const getGetRatesUrl = () => {
+
+
+
+
+  return `/api/saqfi/rates`
+}
+
+export const getRates = async ( options?: Parameters<typeof customFetch>[1]): Promise<Rates> => {
+
+  return customFetch<Rates>(getGetRatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRatesQueryKey = () => {
+    return [
+    `/api/saqfi/rates`
+    ] as const;
+    }
+
+
+export const getGetRatesQueryOptions = <TData = Awaited<ReturnType<typeof getRates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRates>>> = ({ signal }) => getRates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRatesQueryResult = NonNullable<Awaited<ReturnType<typeof getRates>>>
+export type GetRatesQueryError = ErrorType<unknown>
+
+
+
+export function useGetRates<TData = Awaited<ReturnType<typeof getRates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

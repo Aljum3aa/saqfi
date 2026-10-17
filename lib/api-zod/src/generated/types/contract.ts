@@ -10,4 +10,6 @@ export type Contract = ContractInput & {
   id: string;
   totalCost: number;
   outstanding: number;
+  pendingBonus: number;
+  pendingFine: number;
 };

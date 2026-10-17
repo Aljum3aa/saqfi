@@ -10,6 +10,7 @@ export interface HealthStatus {
 
 export interface Message {
   message: string;
+  pending?: boolean;
 }
 
 export type DemoInputRole = typeof DemoInputRole[keyof typeof DemoInputRole];
@@ -70,6 +71,8 @@ export type Contract = ContractInput & {
   id: string;
   totalCost: number;
   outstanding: number;
+  pendingBonus: number;
+  pendingFine: number;
 };
 
 export interface ExpenseInput {
@@ -79,6 +82,7 @@ export interface ExpenseInput {
   /** @minLength 2 */
   description: string;
   date: string;
+  currency?: string;
 }
 
 export interface Transaction {
@@ -88,6 +92,9 @@ export interface Transaction {
   description: string;
   date: string;
   type: string;
+  currency?: string;
+  originalAmount?: number;
+  rate?: number;
 }
 
 export interface PayrollInput {
@@ -132,6 +139,114 @@ export const ClubStateMode = {
   database: 'database',
 } as const;
 
+export type AdjustmentKind = typeof AdjustmentKind[keyof typeof AdjustmentKind];
+
+
+export const AdjustmentKind = {
+  bonus: 'bonus',
+  fine: 'fine',
+} as const;
+
+export interface Adjustment {
+  id: string;
+  playerId: string;
+  kind: AdjustmentKind;
+  amount: number;
+  reason: string;
+  date: string;
+  matchId?: string;
+  settledMonth?: string;
+}
+
+export type MatchResult = typeof MatchResult[keyof typeof MatchResult];
+
+
+export const MatchResult = {
+  W: 'W',
+  D: 'D',
+  L: 'L',
+} as const;
+
+export interface Match {
+  id: string;
+  date: string;
+  opponent: string;
+  opponentEn: string;
+  home: boolean;
+  goalsFor: number;
+  goalsAgainst: number;
+  competition: string;
+  result: MatchResult;
+  bonusPlayers: number;
+  bonusTotal: number;
+}
+
+export interface BonusRules {
+  /** @minimum 0 */
+  win: number;
+  /** @minimum 0 */
+  draw: number;
+}
+
+export type ApprovalRequestStatus = typeof ApprovalRequestStatus[keyof typeof ApprovalRequestStatus];
+
+
+export const ApprovalRequestStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export type ApprovalRequestReason = typeof ApprovalRequestReason[keyof typeof ApprovalRequestReason];
+
+
+export const ApprovalRequestReason = {
+  threshold: 'threshold',
+  cap: 'cap',
+} as const;
+
+export interface ApprovalRequest {
+  id: string;
+  categoryId: string;
+  amount: number;
+  description: string;
+  date: string;
+  status: ApprovalRequestStatus;
+  reason: ApprovalRequestReason;
+  requestedAt: string;
+  decidedAt?: string;
+  note?: string;
+  fromReserve?: number;
+  currency?: string;
+  originalAmount?: number;
+  rate?: number;
+}
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  role: string;
+  action: string;
+  detail: string;
+  detailEn: string;
+}
+
+export type InsightTone = typeof InsightTone[keyof typeof InsightTone];
+
+
+export const InsightTone = {
+  good: 'good',
+  warn: 'warn',
+  bad: 'bad',
+} as const;
+
+export interface Insight {
+  id: string;
+  message: string;
+  messageEn: string;
+  tone: InsightTone;
+}
+
 export interface ClubState {
   club: string;
   clubEn: string;
@@ -152,5 +267,102 @@ export interface ClubState {
   monthlyPayroll: number;
   nextPayrollMonth: string;
   today: string;
+  adjustments: Adjustment[];
+  matches: Match[];
+  bonusRules: BonusRules;
+  approvalThreshold: number;
+  requests: ApprovalRequest[];
+  audit: AuditEntry[];
+  pendingBonuses: number;
+  pendingFines: number;
+  insights: Insight[];
+}
+
+export type AdjustmentInputKind = typeof AdjustmentInputKind[keyof typeof AdjustmentInputKind];
+
+
+export const AdjustmentInputKind = {
+  bonus: 'bonus',
+  fine: 'fine',
+} as const;
+
+export interface AdjustmentInput {
+  playerId: string;
+  kind: AdjustmentInputKind;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /** @minLength 2 */
+  reason: string;
+  date: string;
+}
+
+export interface MatchInput {
+  date: string;
+  /** @minLength 2 */
+  opponent: string;
+  opponentEn: string;
+  home: boolean;
+  /**
+     * @minimum 0
+     * @maximum 30
+     */
+  goalsFor: number;
+  /**
+     * @minimum 0
+     * @maximum 30
+     */
+  goalsAgainst: number;
+  competition: string;
+  playerIds: string[];
+}
+
+export interface ThresholdInput {
+  /** @minimum 0 */
+  threshold: number;
+}
+
+export interface DecisionInput {
+  approve: boolean;
+  note?: string;
+}
+
+export type AdvisorInputLang = typeof AdvisorInputLang[keyof typeof AdvisorInputLang];
+
+
+export const AdvisorInputLang = {
+  ar: 'ar',
+  en: 'en',
+} as const;
+
+export interface AdvisorInput {
+  /**
+     * @minLength 2
+     * @maxLength 500
+     */
+  question: string;
+  lang?: AdvisorInputLang;
+}
+
+export type AdvisorAnswerSource = typeof AdvisorAnswerSource[keyof typeof AdvisorAnswerSource];
+
+
+export const AdvisorAnswerSource = {
+  ai: 'ai',
+  rules: 'rules',
+} as const;
+
+export interface AdvisorAnswer {
+  answer: string;
+  answerEn: string;
+  source: AdvisorAnswerSource;
+}
+
+export type RatesRates = {[key: string]: number};
+
+export interface Rates {
+  base: string;
+  updated: string;
+  source: string;
+  rates: RatesRates;
 }
 

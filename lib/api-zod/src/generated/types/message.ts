@@ -7,4 +7,5 @@
 
 export interface Message {
   message: string;
+  pending?: boolean;
 }

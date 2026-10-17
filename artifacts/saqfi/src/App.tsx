@@ -15,6 +15,9 @@ import Contracts from '@/pages/contracts';
 import Payroll from '@/pages/payroll';
 import Transactions from '@/pages/transactions';
 import PlayerHome from '@/pages/player';
+import Bonuses from '@/pages/bonuses';
+import Approvals from '@/pages/approvals';
+import Audit from '@/pages/audit';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
 
@@ -47,6 +50,9 @@ function Router({ session }: { session: Session }) {
         <Route path="/contracts">{() => <Contracts session={session} />}</Route>
         <Route path="/payroll">{() => <Payroll session={session} />}</Route>
         <Route path="/transactions">{() => <Transactions session={session} />}</Route>
+        <Route path="/bonuses">{() => <Bonuses session={session} />}</Route>
+        <Route path="/approvals">{() => <Approvals session={session} />}</Route>
+        <Route path="/audit">{() => <Audit session={session} />}</Route>
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

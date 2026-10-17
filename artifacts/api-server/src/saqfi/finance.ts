@@ -1,4 +1,7 @@
-import { ClubError, type Club, type Contract } from "./types";
+import { ClubError, type Club, type Contract, type PayrollLine } from "./types";
+
+/** Club policy: pending fines for one player may not exceed half of a monthly salary. */
+export const FINE_LIMIT = 0.5;
 
 // All arithmetic is integer fils. Public API and Mongo amounts are KWD.
 export const fils = (n: number) => Math.round(n * 1000);
@@ -34,10 +37,17 @@ export function outstanding(club: Club, contract: Contract) {
     !club.payrolls.some(p => p.month === month && p.lines.some(l => l.playerId === contract.id))
   ).length * fils(contract.salary);
 }
+/** Unpaid bonuses and fines (fils) for one player, or for everyone when playerId is omitted. */
+export function pending(club: Club, kind: "bonus" | "fine", playerId?: string) {
+  return club.adjustments.filter(a => a.kind === kind && !a.settledMonth && (!playerId || a.playerId === playerId))
+    .reduce((sum, a) => sum + fils(a.amount), 0);
+}
 export function categories(club: Club) {
   return club.categories.map(c => {
     const spent = club.transactions.filter(t => t.categoryId === c.id).reduce((sum, t) => sum + fils(t.amount), 0);
-    const committed = c.id === "players" ? club.contracts.reduce((sum, contract) => sum + outstanding(club, contract), 0) : 0;
+    // Reserved = salaries still owed + bonuses already earned but not yet paid.
+    const committed = c.id === "players"
+      ? club.contracts.reduce((sum, contract) => sum + outstanding(club, contract), 0) + pending(club, "bonus") : 0;
     return { ...c, spent: kwd(spent), committed: kwd(committed), remaining: kwd(fils(c.cap) - spent - committed) };
   });
 }
@@ -54,6 +64,32 @@ export function enforce(club: Club) {
   const total = values.reduce((sum, c) => sum + fils(c.cap), 0);
   if (total !== fils(club.totalBudget))
     throw new ClubError(400, "يجب أن يساوي مجموع سقوف الفئات ميزانية الموسم", "Category caps must sum to the season budget.");
+}
+/** Payroll lines for a month: salary + unpaid bonuses - unpaid fines (dated up to that month). */
+export function payrollLines(club: Club, month: string): { lines: PayrollLine[]; settle: string[] } {
+  const settle: string[] = [];
+  const due = (playerId: string, kind: "bonus" | "fine") => club.adjustments
+    .filter(a => a.playerId === playerId && a.kind === kind && !a.settledMonth && a.date.slice(0, 7) <= month);
+  const lines: PayrollLine[] = [];
+  for (const c of club.contracts) {
+    const covered = contractMonths(club, c).includes(month);
+    const bonuses = due(c.id, "bonus");
+    const fines = covered ? due(c.id, "fine") : [];
+    if (!covered && !bonuses.length) continue;
+    const salary = covered ? fils(c.salary) : 0;
+    const bonus = bonuses.reduce((s, a) => s + fils(a.amount), 0);
+    const fine = Math.min(fines.reduce((s, a) => s + fils(a.amount), 0), salary + bonus);
+    settle.push(...bonuses.map(a => a.id), ...fines.map(a => a.id));
+    lines.push({ playerId: c.id, name: c.name, salary: kwd(salary), bonus: kwd(bonus), fine: kwd(fine), net: kwd(salary + bonus - fine) });
+  }
+  return { lines, settle };
+}
+/** Fill fields that older saved seasons do not have yet. */
+export function normalize(club: Club): Club {
+  club.adjustments ??= []; club.matches ??= []; club.requests ??= []; club.audit ??= [];
+  club.bonusRules ??= { win: 150, draw: 50 };
+  club.approvalThreshold ??= 5000;
+  return club;
 }
 export function snapshot(club: Club, mode: "demo" | "database", today: string) {
   const cats = categories(club);
@@ -77,6 +113,12 @@ export function snapshot(club: Club, mode: "demo" | "database", today: string) {
     message: `رواتب ${month} متأخرة ولم تُسجّل بعد`,
     messageEn: `Payroll for ${month} is overdue and has not been recorded.`,
   });
+  const waiting = club.requests.filter(r => r.status === "pending");
+  if (waiting.length) alerts.push({
+    id: "approvals", type: "approval",
+    message: `${waiting.length} ${waiting.length === 1 ? "طلب ينتظر" : "طلبات تنتظر"} موافقة رئيس النادي`,
+    messageEn: `${waiting.length} request${waiting.length === 1 ? "" : "s"} waiting for the president's approval.`,
+  });
   const trend = seasonMonths.filter(m => m <= currentMonth).map(month => ({
     month, amount: kwd(club.transactions.filter(t => t.date.startsWith(month)).reduce((s, t) => s + fils(t.amount), 0)),
   }));
@@ -86,7 +128,14 @@ export function snapshot(club: Club, mode: "demo" | "database", today: string) {
     contracts: club.contracts.map(c => ({
       ...c, totalCost: kwd(contractMonths(club, c).length * fils(c.salary)),
       outstanding: kwd(outstanding(club, c)),
+      pendingBonus: kwd(pending(club, "bonus", c.id)), pendingFine: kwd(pending(club, "fine", c.id)),
     })),
+    adjustments: [...club.adjustments].sort((a, b) => b.date.localeCompare(a.date)),
+    matches: [...club.matches].sort((a, b) => b.date.localeCompare(a.date)),
+    bonusRules: club.bonusRules, approvalThreshold: club.approvalThreshold,
+    requests: [...club.requests].sort((a, b) => b.requestedAt.localeCompare(a.requestedAt)),
+    audit: [...club.audit].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 150),
+    pendingBonuses: kwd(pending(club, "bonus")), pendingFines: kwd(pending(club, "fine")),
     payrolls: [...club.payrolls].sort((a, b) => b.month.localeCompare(a.month)),
     transactions: [...club.transactions].sort((a, b) => b.date.localeCompare(a.date)),
     alerts, trend, spent, committed, remaining: kwd(fils(club.totalBudget) - fils(spent) - fils(committed)),

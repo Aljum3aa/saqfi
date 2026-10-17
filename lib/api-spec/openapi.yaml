@@ -106,6 +106,126 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/matches:
+    post:
+      operationId: createMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/MatchInput"}
+      responses:
+        "201":
+          description: Match recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/adjustments:
+    post:
+      operationId: createAdjustment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AdjustmentInput"}
+      responses:
+        "201":
+          description: Bonus or fine recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/adjustments/{id}:
+    delete:
+      operationId: deleteAdjustment
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/bonus-rules:
+    put:
+      operationId: saveBonusRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/BonusRules"}
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/approval-threshold:
+    put:
+      operationId: saveApprovalThreshold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ThresholdInput"}
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/requests:
+    post:
+      operationId: createRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ExpenseInput"}
+      responses:
+        "201":
+          description: Sent for approval
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/requests/{id}/decision:
+    post:
+      operationId: decideRequest
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/DecisionInput"}
+      responses:
+        "200":
+          description: Decided
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/advisor:
+    post:
+      operationId: askAdvisor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AdvisorInput"}
+      responses:
+        "200":
+          description: Advice
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AdvisorAnswer"}
+  /saqfi/rates:
+    get:
+      operationId: getRates
+      responses:
+        "200":
+          description: Live exchange rates, base KWD
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Rates"}
 components:
   schemas:
     HealthStatus:
@@ -115,7 +235,7 @@ components:
     Message:
       type: object
       required: [message]
-      properties: {message: {type: string}}
+      properties: {message: {type: string}, pending: {type: boolean}}
     DemoInput:
       type: object
       required: [role]
@@ -166,11 +286,13 @@ components:
       allOf:
         - {$ref: "#/components/schemas/ContractInput"}
         - type: object
-          required: [id, totalCost, outstanding]
+          required: [id, totalCost, outstanding, pendingBonus, pendingFine]
           properties:
             id: {type: string}
             totalCost: {type: number}
             outstanding: {type: number}
+            pendingBonus: {type: number}
+            pendingFine: {type: number}
     ExpenseInput:
       type: object
       required: [categoryId, amount, description, date]
@@ -179,6 +301,7 @@ components:
         amount: {type: number, exclusiveMinimum: 0}
         description: {type: string, minLength: 2}
         date: {type: string}
+        currency: {type: string}
     Transaction:
       type: object
       required: [id, categoryId, amount, description, date, type]
@@ -189,6 +312,9 @@ components:
         description: {type: string}
         date: {type: string}
         type: {type: string}
+        currency: {type: string}
+        originalAmount: {type: number}
+        rate: {type: number}
     PayrollInput:
       type: object
       required: [month]
@@ -229,7 +355,7 @@ components:
         amount: {type: number}
     ClubState:
       type: object
-      required: [club, clubEn, seasonStart, seasonEnd, totalBudget, mode, categories, contracts, payrolls, transactions, alerts, trend, spent, committed, remaining, forecast, monthlyPayroll, nextPayrollMonth, today]
+      required: [club, clubEn, seasonStart, seasonEnd, totalBudget, mode, categories, contracts, payrolls, transactions, alerts, trend, spent, committed, remaining, forecast, monthlyPayroll, nextPayrollMonth, today, adjustments, matches, bonusRules, approvalThreshold, requests, audit, pendingBonuses, pendingFines, insights]
       properties:
         club: {type: string}
         clubEn: {type: string}
@@ -250,3 +376,134 @@ components:
         monthlyPayroll: {type: number}
         nextPayrollMonth: {type: string}
         today: {type: string}
+        adjustments: {type: array, items: {$ref: "#/components/schemas/Adjustment"}}
+        matches: {type: array, items: {$ref: "#/components/schemas/Match"}}
+        bonusRules: {$ref: "#/components/schemas/BonusRules"}
+        approvalThreshold: {type: number}
+        requests: {type: array, items: {$ref: "#/components/schemas/ApprovalRequest"}}
+        audit: {type: array, items: {$ref: "#/components/schemas/AuditEntry"}}
+        pendingBonuses: {type: number}
+        pendingFines: {type: number}
+        insights: {type: array, items: {$ref: "#/components/schemas/Insight"}}
+    Adjustment:
+      type: object
+      required: [id, playerId, kind, amount, reason, date]
+      properties:
+        id: {type: string}
+        playerId: {type: string}
+        kind: {type: string, enum: [bonus, fine]}
+        amount: {type: number}
+        reason: {type: string}
+        date: {type: string}
+        matchId: {type: string}
+        settledMonth: {type: string}
+    AdjustmentInput:
+      type: object
+      required: [playerId, kind, amount, reason, date]
+      properties:
+        playerId: {type: string}
+        kind: {type: string, enum: [bonus, fine]}
+        amount: {type: number, exclusiveMinimum: 0}
+        reason: {type: string, minLength: 2}
+        date: {type: string}
+    Match:
+      type: object
+      required: [id, date, opponent, opponentEn, home, goalsFor, goalsAgainst, competition, result, bonusPlayers, bonusTotal]
+      properties:
+        id: {type: string}
+        date: {type: string}
+        opponent: {type: string}
+        opponentEn: {type: string}
+        home: {type: boolean}
+        goalsFor: {type: integer}
+        goalsAgainst: {type: integer}
+        competition: {type: string}
+        result: {type: string, enum: [W, D, L]}
+        bonusPlayers: {type: integer}
+        bonusTotal: {type: number}
+    MatchInput:
+      type: object
+      required: [date, opponent, opponentEn, home, goalsFor, goalsAgainst, competition, playerIds]
+      properties:
+        date: {type: string}
+        opponent: {type: string, minLength: 2}
+        opponentEn: {type: string}
+        home: {type: boolean}
+        goalsFor: {type: integer, minimum: 0, maximum: 30}
+        goalsAgainst: {type: integer, minimum: 0, maximum: 30}
+        competition: {type: string}
+        playerIds: {type: array, items: {type: string}}
+    BonusRules:
+      type: object
+      required: [win, draw]
+      properties:
+        win: {type: number, minimum: 0}
+        draw: {type: number, minimum: 0}
+    ThresholdInput:
+      type: object
+      required: [threshold]
+      properties:
+        threshold: {type: number, minimum: 0}
+    ApprovalRequest:
+      type: object
+      required: [id, categoryId, amount, description, date, status, reason, requestedAt]
+      properties:
+        id: {type: string}
+        categoryId: {type: string}
+        amount: {type: number}
+        description: {type: string}
+        date: {type: string}
+        status: {type: string, enum: [pending, approved, rejected]}
+        reason: {type: string, enum: [threshold, cap]}
+        requestedAt: {type: string}
+        decidedAt: {type: string}
+        note: {type: string}
+        fromReserve: {type: number}
+        currency: {type: string}
+        originalAmount: {type: number}
+        rate: {type: number}
+    DecisionInput:
+      type: object
+      required: [approve]
+      properties:
+        approve: {type: boolean}
+        note: {type: string}
+    AuditEntry:
+      type: object
+      required: [id, at, role, action, detail, detailEn]
+      properties:
+        id: {type: string}
+        at: {type: string}
+        role: {type: string}
+        action: {type: string}
+        detail: {type: string}
+        detailEn: {type: string}
+    Insight:
+      type: object
+      required: [id, message, messageEn, tone]
+      properties:
+        id: {type: string}
+        message: {type: string}
+        messageEn: {type: string}
+        tone: {type: string, enum: [good, warn, bad]}
+    AdvisorInput:
+      type: object
+      required: [question]
+      properties:
+        question: {type: string, minLength: 2, maxLength: 500}
+        lang: {type: string, enum: [ar, en]}
+    AdvisorAnswer:
+      type: object
+      required: [answer, answerEn, source]
+      properties:
+        answer: {type: string}
+        answerEn: {type: string}
+        source: {type: string, enum: [ai, rules]}
+    Rates:
+      type: object
+      required: [base, updated, source, rates]
+      properties:
+        base: {type: string}
+        updated: {type: string}
+        source: {type: string}
+        rates: {type: object, additionalProperties: {type: number}}

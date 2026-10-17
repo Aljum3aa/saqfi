@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { AlertTriangle, CheckCircle2, Banknote, ArrowDownLeft, CalendarClock, TrendingUp, Receipt, UserPlus } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Banknote, ArrowDownLeft, CalendarClock, TrendingUp, Receipt, UserPlus, Trophy, ShieldCheck, Sparkles, History } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { Session } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
@@ -50,6 +50,7 @@ export default function Dashboard({ session }: { session: Session }) {
   const over = s.forecast > s.totalBudget;
   const gap = Math.abs(s.totalBudget - s.forecast);
   const free = s.remaining;
+  const waiting = s.requests.filter((r) => r.status === 'pending').length;
   const trend0 = (s.trend ?? []).map((p) => ({ m: shortMonth(p.month, lang), v: p.amount }));
   const trend = lang === 'ar' ? [...trend0].reverse() : trend0;   /* RTL: newest month on the left edge reads right-to-left */
 
@@ -90,7 +91,7 @@ export default function Dashboard({ session }: { session: Session }) {
           <nav aria-label={t('إجراءات سريعة', 'Quick actions')} className="grid grid-cols-3 gap-3">
             {[
               { href: '/transactions?new=1', icon: Receipt, ar: 'تسجيل مصروف', en: 'Record expense', id: 'expense' },
-              { href: '/contracts?new=1', icon: UserPlus, ar: 'إضافة عقد', en: 'Add contract', id: 'contract' },
+              { href: '/bonuses', icon: Trophy, ar: 'نتيجة مباراة', en: 'Match result', id: 'match' },
               { href: '/payroll', icon: Banknote, ar: 'صرف الرواتب', en: 'Run payroll', id: 'payroll' },
             ].map((a) => (
               <Link key={a.id} href={a.href} data-testid={`link-quick-${a.id}`}
@@ -99,6 +100,23 @@ export default function Dashboard({ session }: { session: Session }) {
                 <span className="text-[13px] sm:text-[15px] font-semibold leading-tight">{t(a.ar, a.en)}</span>
               </Link>
             ))}
+          </nav>
+        )}
+
+        {session.role === 'president' && (
+          <nav aria-label={t('إجراءات سريعة', 'Quick actions')} className="grid grid-cols-2 gap-3">
+            <Link href="/approvals" data-testid="link-quick-approvals"
+              className="panel relative flex items-center gap-3 p-4 min-h-[76px] hover:shadow-lg hover:-translate-y-px active:translate-y-0 transition">
+              <span className="h-10 w-10 rounded-full bg-cap/15 text-[hsl(42_60%_30%)] grid place-items-center shrink-0"><ShieldCheck className="h-[18px] w-[18px]" /></span>
+              <span className="min-w-0"><span className="block font-semibold">{t('الموافقات', 'Approvals')}</span>
+                <span className="block text-[13px] text-muted-foreground">{waiting > 0 ? t(`${waiting} تنتظر قرارك`, `${waiting} waiting for you`) : t('ما في شي ينتظر', 'Nothing waiting')}</span></span>
+            </Link>
+            <Link href="/audit" data-testid="link-quick-audit"
+              className="panel flex items-center gap-3 p-4 min-h-[76px] hover:shadow-lg hover:-translate-y-px active:translate-y-0 transition">
+              <span className="h-10 w-10 rounded-full bg-accent text-primary grid place-items-center shrink-0"><History className="h-[18px] w-[18px]" /></span>
+              <span className="min-w-0"><span className="block font-semibold">{t('سجل العمليات', 'Activity log')}</span>
+                <span className="block text-[13px] text-muted-foreground">{t('مين صرف شنو ومتى', 'Who spent what, and when')}</span></span>
+            </Link>
           </nav>
         )}
 
@@ -151,7 +169,8 @@ export default function Dashboard({ session }: { session: Session }) {
             ) : (
               <ul className="space-y-3">
                 {s.alerts.map((a) => {
-                  const pay = /payroll|overdue|salar/i.test(a.type);
+                  const pay = /payroll|overdue|salar|late/i.test(a.type);
+                  const appr = a.type === 'approval';
                   const bad = /overdue|over/i.test(a.type);
                   return (
                     <li key={a.id} data-testid={`alert-${a.id}`} className={cn('rounded-2xl p-4', bad ? 'bg-destructive/[.06]' : 'bg-warning/[.08]')}>
@@ -159,9 +178,9 @@ export default function Dashboard({ session }: { session: Session }) {
                         <span className={cn('h-9 w-9 rounded-full grid place-items-center shrink-0', bad ? 'bg-destructive/10 text-destructive' : 'bg-warning/15 text-warning')}><AlertTriangle className="h-[18px] w-[18px]" /></span>
                         <span className="pt-1.5">{displayText(t(a.message, a.messageEn), lang)}</span>
                       </div>
-                      <Link href={pay ? '/payroll' : '/budget'} data-testid={`link-fix-${a.id}`}
+                      <Link href={appr ? '/approvals' : pay ? '/payroll' : '/budget'} data-testid={`link-fix-${a.id}`}
                         className="mt-3 ms-12 inline-flex min-h-10 items-center rounded-full bg-card px-4 text-[14px] font-semibold shadow-sm hover:shadow-md transition">
-                        {pay ? t('افتح الرواتب', 'Open payroll') : t('افتح الميزانية', 'Open budget')}
+                        {appr ? t('افتح الموافقات', 'Open approvals') : pay ? t('افتح الرواتب', 'Open payroll') : t('افتح الميزانية', 'Open budget')}
                       </Link>
                     </li>
                   );
@@ -170,6 +189,24 @@ export default function Dashboard({ session }: { session: Session }) {
             )}
           </section>
         </div>
+
+        {s.insights.length > 0 && (
+          <section className="panel p-5 md:p-7" data-testid="card-insights">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-cap" />
+              <h2 className="text-[19px] font-semibold">{t('قراءة المستشار', 'Advisor notes')}</h2>
+              <span className="text-[13px] text-muted-foreground ms-auto">{t('محسوبة من صرفكم الفعلي', 'From your actual spending')}</span>
+            </div>
+            <ul className="grid gap-3 md:grid-cols-2">
+              {s.insights.map((i) => (
+                <li key={i.id} className={cn('rounded-2xl p-4 text-[15px] leading-relaxed border-s-4',
+                  i.tone === 'bad' ? 'bg-destructive/[.05] border-destructive' : i.tone === 'warn' ? 'bg-warning/[.07] border-warning' : 'bg-success/[.06] border-success')}>
+                  {t(i.message, i.messageEn)}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="panel p-5 md:p-7">
           <div className="flex items-center justify-between gap-3">

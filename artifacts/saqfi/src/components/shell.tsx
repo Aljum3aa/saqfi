@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogOut, Languages, Home, Wallet, Users, Banknote, Receipt, MessageCircleQuestion, AlertCircle, RotateCw } from 'lucide-react';
+import { LogOut, Languages, Home, Wallet, Users, Banknote, Receipt, MessageCircleQuestion, AlertCircle, RotateCw, Trophy, ShieldCheck, History, LayoutGrid } from 'lucide-react';
 import {
   useLogout, getGetSessionQueryKey, getGetClubStateQueryKey, useGetClubState, type Session, type ClubState,
 } from '@workspace/api-client-react';
@@ -10,8 +10,9 @@ import { kwd } from '@/lib/saqfi';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
+import { AdvisorDialog } from '@/components/advisor';
 
 /** The Saqfi mark: a gold cap line with three budget bars under it, none crossing it (Gemini concept, redrawn as vector). */
 export function Mark({ size = 34, tile = true, onDark = false }: { size?: number; tile?: boolean; onDark?: boolean }) {
@@ -54,36 +55,18 @@ export function useClub() {
 }
 
 const NAV = [
-  { href: '/dashboard', ar: 'الرئيسية', en: 'Home', sar: 'الرئيسية', sen: 'Home', icon: Home },
+  { href: '/dashboard', ar: 'الرئيسية', en: 'Home', sar: 'الرئيسية', sen: 'Home', icon: Home, tab: true },
   { href: '/budget', ar: 'الميزانية', en: 'Budget', sar: 'الميزانية', sen: 'Budget', icon: Wallet },
-  { href: '/contracts', ar: 'اللاعبين والعقود', en: 'Players & contracts', sar: 'اللاعبين', sen: 'Players', icon: Users },
-  { href: '/payroll', ar: 'الرواتب', en: 'Payroll', sar: 'الرواتب', sen: 'Payroll', icon: Banknote },
-  { href: '/transactions', ar: 'المصاريف', en: 'Expenses', sar: 'المصاريف', sen: 'Expenses', icon: Receipt },
+  { href: '/contracts', ar: 'اللاعبين والعقود', en: 'Players & contracts', sar: 'اللاعبين', sen: 'Players', icon: Users, tab: true },
+  { href: '/payroll', ar: 'الرواتب', en: 'Payroll', sar: 'الرواتب', sen: 'Payroll', icon: Banknote, tab: true },
+  { href: '/bonuses', ar: 'المكافآت والغرامات', en: 'Bonuses & fines', sar: 'المكافآت', sen: 'Bonuses', icon: Trophy },
+  { href: '/transactions', ar: 'المصاريف', en: 'Expenses', sar: 'المصاريف', sen: 'Expenses', icon: Receipt, tab: true },
+  { href: '/approvals', ar: 'الموافقات', en: 'Approvals', sar: 'الموافقات', sen: 'Approvals', icon: ShieldCheck },
+  { href: '/audit', ar: 'سجل العمليات', en: 'Activity log', sar: 'السجل', sen: 'Log', icon: History },
 ];
 
 export const roleLabel = (r: string, t: (a: string, e: string) => string) =>
   r === 'manager' ? t('المدير المالي', 'Finance manager') : r === 'president' ? t('رئيس النادي', 'Club president') : t('لاعب', 'Player');
-
-function AdvisorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { t } = useLang();
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-testid="dialog-advisor">
-        <DialogHeader>
-          <DialogTitle>{t('المستشار', 'Advisor')}</DialogTitle>
-          <DialogDescription>{t('غير مفعّل بعد', 'Not active yet')}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3 text-[15px]">
-          <p>{t('المستشار راح يجاوب على أسئلتك من أرقام النادي نفسها، مثل: هل أقدر أوقّع لاعب جديد هالشهر؟',
-            'The advisor will answer your questions from the club\'s own figures, for example: can I sign a new player this month?')}</p>
-          <p className="text-muted-foreground">{t('للنصيحة فقط. ما يسجّل مصروف ولا يغيّر الميزانية ولا يصرف رواتب، والقرار دايماً لك.',
-            'Advice only. It will never record expenses, change the budget or run payroll. The decision is always yours.')}</p>
-        </div>
-        <div className="flex justify-end"><Button onClick={() => onOpenChange(false)} data-testid="button-close-advisor">{t('تمام', 'OK')}</Button></div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function Brand({ s, dark = false }: { s?: ClubState; dark?: boolean }) {
   const { t } = useLang();
@@ -105,6 +88,7 @@ export function Shell({ session, children }: { session: Session; children: React
   const qc = useQueryClient();
   const club = useClub();
   const [advisor, setAdvisor] = useState(false);
+  const [more, setMore] = useState(false);
   const logout = useLogout({
     mutation: {
       onSuccess: () => {
@@ -119,6 +103,10 @@ export function Shell({ session, children }: { session: Session; children: React
   const isPlayer = session.role === 'player';
   const s = club.data as ClubState | undefined;
   const active = (h: string) => loc === h || (h === '/dashboard' && loc === '/');
+  const waiting = s?.requests?.filter((r) => r.status === 'pending').length ?? 0;
+  const badge = (href: string) => (href === '/approvals' && waiting > 0 ? waiting : 0);
+  const tabs = NAV.filter((n) => n.tab);
+  const moreOn = NAV.some((n) => !n.tab && active(n.href));
   const modeText = s?.mode === 'demo' ? t('بيانات تجريبية', 'Demo data') : s?.mode === 'database' ? t('قاعدة البيانات', 'Database') : '';
 
   return (
@@ -136,7 +124,7 @@ export function Shell({ session, children }: { session: Session; children: React
               </div>
             </div>
           )}
-          <nav className="mt-8 flex flex-col gap-1" aria-label={t('الأقسام', 'Sections')}>
+          <nav className="mt-6 flex flex-col gap-0.5" aria-label={t('الأقسام', 'Sections')}>
             {NAV.map((n) => {
               const Icon = n.icon;
               const on = active(n.href);
@@ -146,6 +134,7 @@ export function Shell({ session, children }: { session: Session; children: React
                     on ? 'bg-white text-[#0f1f3d] font-semibold shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white')}>
                   <Icon className="h-[18px] w-[18px]" />
                   {t(n.ar, n.en)}
+                  {badge(n.href) > 0 && <span className="ms-auto min-w-6 h-6 px-1.5 rounded-full bg-cap text-[#0f1f3d] text-[12px] font-bold grid place-items-center num" data-testid="badge-approvals">{badge(n.href)}</span>}
                 </Link>
               );
             })}
@@ -199,7 +188,7 @@ export function Shell({ session, children }: { session: Session; children: React
       {!isPlayer && (
         <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]" data-testid="nav-mobile">
           <div className="grid grid-cols-5">
-            {NAV.map((n) => {
+            {tabs.map((n) => {
               const Icon = n.icon;
               const on = active(n.href);
               return (
@@ -210,9 +199,42 @@ export function Shell({ session, children }: { session: Session; children: React
                 </Link>
               );
             })}
+            <button onClick={() => setMore(true)} data-testid="button-tab-more" aria-expanded={more}
+              className={cn('relative flex flex-col items-center justify-center gap-1 min-h-[64px] px-1 text-[12px] leading-tight', moreOn ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+              <span className={cn('relative inline-flex h-7 w-12 items-center justify-center rounded-full', moreOn && 'bg-accent')}>
+                <LayoutGrid className="h-5 w-5" />
+                {waiting > 0 && <span className="absolute -top-1 end-1 h-4 min-w-4 px-1 rounded-full bg-destructive text-white text-[10px] font-bold grid place-items-center num">{waiting}</span>}
+              </span>
+              <span className="text-center">{t('المزيد', 'More')}</span>
+            </button>
           </div>
         </nav>
       )}
+      <Sheet open={more} onOpenChange={setMore}>
+        <SheetContent side="bottom" className="rounded-t-[24px] pb-[calc(env(safe-area-inset-bottom)+20px)]">
+          <SheetHeader className="text-start rtl:pr-10 ltr:pr-10">
+            <SheetTitle>{t('المزيد', 'More')}</SheetTitle>
+            <SheetDescription>{s ? t(s.club, s.clubEn) : ''}</SheetDescription>
+          </SheetHeader>
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            {NAV.filter((n) => !n.tab).map((n) => {
+              const Icon = n.icon;
+              return (
+                <Link key={n.href} href={n.href} onClick={() => setMore(false)} data-testid={`link-more-${n.href.slice(1)}`}
+                  className={cn('panel relative flex items-center gap-3 p-4 min-h-[64px]', active(n.href) && 'ring-2 ring-primary')}>
+                  <span className="h-10 w-10 rounded-full bg-accent text-primary grid place-items-center shrink-0"><Icon className="h-[18px] w-[18px]" /></span>
+                  <span className="font-semibold text-[14px] leading-tight">{t(n.ar, n.en)}</span>
+                  {badge(n.href) > 0 && <span className="absolute top-2 end-2 h-5 min-w-5 px-1 rounded-full bg-destructive text-white text-[11px] font-bold grid place-items-center num">{badge(n.href)}</span>}
+                </Link>
+              );
+            })}
+            <button onClick={() => { setMore(false); setAdvisor(true); }} className="panel flex items-center gap-3 p-4 min-h-[64px] text-start" data-testid="button-more-advisor">
+              <span className="h-10 w-10 rounded-full bg-cap/15 text-[hsl(42_60%_30%)] grid place-items-center shrink-0"><MessageCircleQuestion className="h-[18px] w-[18px]" /></span>
+              <span className="font-semibold text-[14px] leading-tight">{t('اسأل المستشار', 'Ask the advisor')}</span>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
       <AdvisorDialog open={advisor} onOpenChange={setAdvisor} />
     </div>
   );

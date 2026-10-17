@@ -4,10 +4,16 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { Adjustment } from './adjustment';
 import type { Alert } from './alert';
+import type { ApprovalRequest } from './approvalRequest';
+import type { AuditEntry } from './auditEntry';
+import type { BonusRules } from './bonusRules';
 import type { Category } from './category';
 import type { ClubStateMode } from './clubStateMode';
 import type { Contract } from './contract';
+import type { Insight } from './insight';
+import type { Match } from './match';
 import type { Payroll } from './payroll';
 import type { Transaction } from './transaction';
 import type { Trend } from './trend';
@@ -32,4 +38,13 @@ export interface ClubState {
   monthlyPayroll: number;
   nextPayrollMonth: string;
   today: string;
+  adjustments: Adjustment[];
+  matches: Match[];
+  bonusRules: BonusRules;
+  approvalThreshold: number;
+  requests: ApprovalRequest[];
+  audit: AuditEntry[];
+  pendingBonuses: number;
+  pendingFines: number;
+  insights: Insight[];
 }

@@ -3,10 +3,14 @@ import { randomBytes, createHash, randomUUID } from "node:crypto";
 import cookieParser from "cookie-parser";
 import {
   LoginDemoBody, SaveBudgetBody, CreateContractBody, CreateExpenseBody, RunPayrollBody,
+  CreateMatchBody, CreateAdjustmentBody, SaveBonusRulesBody, SaveApprovalThresholdBody,
+  CreateRequestBody, DecideRequestBody, AskAdvisorBody,
 } from "@workspace/api-zod";
-import { ClubError, type Role, type Contract } from "./types";
+import { ClubError, type Role, type Contract, type Club } from "./types";
 import { dataMode, mutateClub, readClub } from "./store";
-import { contractMonths, fils, kwd, money, snapshot, validDate } from "./finance";
+import { contractMonths, fils, kwd, money, snapshot, validDate, payrollLines, pending, categories, FINE_LIMIT } from "./finance";
+import { advise, insights } from "./advisor";
+import { getRates, toKwd } from "./fx";
 
 export const saqfiRouter = Router();
 const today = () => new Date().toISOString().slice(0, 10);
@@ -47,10 +51,40 @@ function requireSession(req: Request, _res: Response, next: NextFunction) {
   if (!session(req)) return next(new ClubError(401, "يرجى تسجيل الدخول", "Please sign in."));
   next();
 }
-function requireManager(req: Request, _res: Response, next: NextFunction) {
-  if (session(req)?.role !== "manager")
-    return next(new ClubError(403, "هذه العملية متاحة للمدير المالي فقط", "Only the finance manager can perform this action."));
+const only = (...roles: Role[]) => (req: Request, _res: Response, next: NextFunction) => {
+  const role = session(req)?.role;
+  if (!role || !roles.includes(role))
+    return next(roles.includes("manager")
+      ? new ClubError(403, "هذه العملية متاحة للمدير المالي فقط", "Only the finance manager can perform this action.")
+      : new ClubError(403, "هذه العملية لرئيس النادي فقط", "Only the club president can perform this action."));
   next();
+};
+const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 3 });
+/** Every change leaves a line in the club's operations log. */
+function log(club: Club, req: Request, action: string, detail: string, detailEn: string) {
+  club.audit.push({ id: randomUUID(), at: new Date().toISOString(), role: session(req)!.role, action, detail, detailEn });
+}
+function fullState(club: Club) {
+  const state = snapshot(club, dataMode, today());
+  return { ...state, insights: insights(state) };
+}
+function checkExpense(club: Club, input: { categoryId: string; date: string }) {
+  if (!club.categories.some(c => c.id === input.categoryId))
+    throw new ClubError(404, "الفئة غير موجودة", "Category not found.");
+  if (input.date < club.seasonStart || input.date > club.seasonEnd || input.date > today())
+    throw new ClubError(400, "تاريخ المصروف يجب أن يكون ضمن الموسم وليس في المستقبل", "Expense date must be in the season and cannot be in the future.");
+}
+/** Validate an expense body and convert a foreign amount to KWD with the live rate (outside the data transaction). */
+async function expenseInput(body: unknown) {
+  const input = CreateExpenseBody.parse(body);
+  money(input.amount); validDate(input.date);
+  if (input.description.trim().length < 2 || input.description.length > 250)
+    throw new ClubError(400, "أدخل وصفًا من 2 إلى 250 حرفًا", "Description must be 2–250 characters.");
+  const currency = (input.currency ?? "KWD").toUpperCase();
+  const { kwd: amount, rate } = await toKwd(input.amount, currency);
+  if (amount <= 0) throw new ClubError(400, "المبلغ صغير جداً بعد التحويل", "Amount is too small after conversion.");
+  const foreign = currency === "KWD" ? {} : { currency, originalAmount: input.amount, rate };
+  return { categoryId: input.categoryId, amount, description: input.description.trim(), date: input.date, foreign };
 }
 const cookieOptions = (req: Request) => ({
   httpOnly: true, sameSite: "strict" as const, path: "/api/saqfi",
@@ -80,13 +114,15 @@ saqfiRouter.delete("/session", (req, res) => {
 saqfiRouter.use(requireSession);
 saqfiRouter.get("/state", async (req, res) => {
   const club = await readClub();
-  const state = snapshot(club, dataMode, today());
+  const state = fullState(club);
   if (session(req)!.role === "player") {
     // Do not leak another player's salary or club financials to player sessions.
     const ownId = "player-1";
     res.json({
       ...state, totalBudget: 0, categories: [], spent: 0, committed: 0, remaining: 0,
       forecast: 0, monthlyPayroll: 0, alerts: [], trend: [], nextPayrollMonth: "",
+      insights: [], requests: [], audit: [], pendingBonuses: 0, pendingFines: 0,
+      adjustments: state.adjustments.filter(a => a.playerId === ownId),
       contracts: state.contracts.filter(c => c.id === ownId),
       payrolls: state.payrolls.map(p => {
         const lines = p.lines.filter(l => l.playerId === ownId);
@@ -98,7 +134,64 @@ saqfiRouter.get("/state", async (req, res) => {
   }
   res.json(state);
 });
-saqfiRouter.use(requireManager);
+saqfiRouter.get("/rates", async (_req, res) => {
+  const r = await getRates();
+  res.json({ base: "KWD", updated: r.updated, source: r.source, rates: r.rates });
+});
+saqfiRouter.post("/advisor", only("manager", "president"), async (req, res) => {
+  const { question, lang } = AskAdvisorBody.parse(req.body);
+  res.json(await advise(question.trim(), fullState(await readClub()), lang === "en" ? "en" : "ar"));
+});
+saqfiRouter.put("/approval-threshold", only("president"), async (req, res) => {
+  const { threshold } = SaveApprovalThresholdBody.parse(req.body);
+  money(threshold, true);
+  await mutateClub(club => {
+    club.approvalThreshold = threshold;
+    log(club, req, "settings", `حد موافقة الرئيس صار ${fmt(threshold)} د.ك`, `President approval limit set to KWD ${fmt(threshold)}`);
+  });
+  res.json({ message: "تم حفظ حد الموافقة" });
+});
+saqfiRouter.post("/requests/:id/decision", only("president"), async (req, res) => {
+  const { approve, note } = DecideRequestBody.parse(req.body);
+  let message = "";
+  await mutateClub(club => {
+    const r = club.requests.find(x => x.id === req.params.id);
+    if (!r) throw new ClubError(404, "الطلب غير موجود", "Request not found.");
+    if (r.status !== "pending") throw new ClubError(409, "تم البت في هذا الطلب من قبل", "This request was already decided.");
+    r.decidedAt = new Date().toISOString();
+    r.note = note?.trim().slice(0, 250) || undefined;
+    const cat = club.categories.find(c => c.id === r.categoryId);
+    if (!cat) throw new ClubError(404, "الفئة غير موجودة", "Category not found.");
+    if (!approve) {
+      r.status = "rejected";
+      log(club, req, "reject", `رفض طلب: ${r.description} ${fmt(r.amount)} د.ك`, `Rejected: ${r.description} KWD ${fmt(r.amount)}`);
+      message = "تم رفض الطلب";
+      return;
+    }
+    // If the category cannot hold it, the president's approval moves the shortfall from the reserve.
+    const left = (id: string) => fils(categories(club).find(c => c.id === id)!.remaining);
+    const short = fils(r.amount) - left(cat.id);
+    if (short > 0) {
+      const reserve = club.categories.find(c => c.id === "reserve");
+      const reserveLeft = reserve ? left("reserve") : 0;
+      if (!reserve || cat.id === "reserve" || reserveLeft < short)
+        throw new ClubError(409, `الاحتياطي ما يكفي لتغطية الفرق (${fmt(kwd(short))} د.ك)`,
+          `The reserve cannot cover the shortfall (KWD ${fmt(kwd(short))}).`, kwd(short - Math.max(0, reserveLeft)));
+      reserve.cap = kwd(fils(reserve.cap) - short);
+      cat.cap = kwd(fils(cat.cap) + short);
+      r.fromReserve = kwd(short);
+    }
+    r.status = "approved";
+    club.transactions.push({ id: randomUUID(), categoryId: r.categoryId, amount: r.amount, description: r.description,
+      date: r.date, type: "expense", ...(r.currency ? { currency: r.currency, originalAmount: r.originalAmount, rate: r.rate } : {}) });
+    log(club, req, "approve", `موافقة: ${r.description} ${fmt(r.amount)} د.ك${short > 0 ? `، ونقل ${fmt(kwd(short))} د.ك من الاحتياطي` : ""}`,
+      `Approved: ${r.description} KWD ${fmt(r.amount)}${short > 0 ? `, KWD ${fmt(kwd(short))} moved from reserve` : ""}`);
+    message = short > 0 ? `تمت الموافقة ونقلنا ${fmt(kwd(short))} د.ك من الاحتياطي` : "تمت الموافقة وانسجل المصروف";
+  });
+  res.json({ message });
+});
+
+saqfiRouter.use(only("manager"));
 saqfiRouter.put("/budget", async (req, res) => {
   const input = SaveBudgetBody.parse(req.body);
   money(input.total);
@@ -110,6 +203,7 @@ saqfiRouter.put("/budget", async (req, res) => {
       throw new ClubError(400, "أرسل سقوف الفئات الخمس دون تكرار", "Provide all five category caps without duplicates.");
     club.totalBudget = input.total;
     club.categories = club.categories.map(c => ({ ...c, cap: input.categories.find(v => v.id === c.id)!.cap }));
+    log(club, req, "budget", `تعديل الميزانية: ${fmt(input.total)} د.ك`, `Budget edited: KWD ${fmt(input.total)}`);
   });
   res.json({ message: "تم حفظ ميزانية الموسم" });
 });
@@ -130,22 +224,107 @@ saqfiRouter.post("/contracts", async (req, res) => {
     if (!contractMonths(club, contract).length)
       throw new ClubError(400, "مدة العقد غير صالحة", "Invalid contract duration.");
     club.contracts.push(contract);
+    log(club, req, "contract", `عقد جديد: ${contract.name} براتب ${fmt(contract.salary)} د.ك`, `New contract: ${contract.nameEn} at KWD ${fmt(contract.salary)}`);
   });
   res.status(201).json({ message: "تم تسجيل العقد وحجز إجمالي التزامه" });
 });
 saqfiRouter.post("/expenses", async (req, res) => {
-  const input = CreateExpenseBody.parse(req.body);
-  money(input.amount); validDate(input.date);
-  if (input.description.trim().length < 2 || input.description.length > 250)
-    throw new ClubError(400, "أدخل وصفًا من 2 إلى 250 حرفًا", "Description must be 2–250 characters.");
+  const e = await expenseInput(req.body);
+  let sent = false;
   await mutateClub(club => {
-    if (!club.categories.some(c => c.id === input.categoryId))
-      throw new ClubError(404, "الفئة غير موجودة", "Category not found.");
-    if (input.date < club.seasonStart || input.date > club.seasonEnd || input.date > today())
-      throw new ClubError(400, "تاريخ المصروف يجب أن يكون ضمن الموسم وليس في المستقبل", "Expense date must be in the season and cannot be in the future.");
-    club.transactions.push({ ...input, description: input.description.trim(), id: randomUUID(), type: "expense" });
+    sent = false;
+    checkExpense(club, e);
+    // Large amounts never post directly: they wait for the president.
+    if (club.approvalThreshold > 0 && fils(e.amount) >= fils(club.approvalThreshold)) {
+      sent = true;
+      club.requests.push({ id: randomUUID(), categoryId: e.categoryId, amount: e.amount, description: e.description, date: e.date,
+        status: "pending", reason: "threshold", requestedAt: new Date().toISOString(), ...e.foreign });
+      log(club, req, "request", `طلب موافقة: ${e.description} ${fmt(e.amount)} د.ك`, `Approval requested: ${e.description} KWD ${fmt(e.amount)}`);
+      return;
+    }
+    club.transactions.push({ categoryId: e.categoryId, amount: e.amount, description: e.description, date: e.date,
+      id: randomUUID(), type: "expense", ...e.foreign });
+    log(club, req, "expense", `مصروف: ${e.description} ${fmt(e.amount)} د.ك`, `Expense: ${e.description} KWD ${fmt(e.amount)}`);
   });
-  res.status(201).json({ message: "تم تسجيل المصروف" });
+  res.status(sent ? 202 : 201).json(sent
+    ? { message: "المبلغ فوق حد الموافقة، فانرسل لرئيس النادي", pending: true }
+    : { message: "تم تسجيل المصروف", pending: false });
+});
+saqfiRouter.post("/requests", async (req, res) => {
+  const e = await expenseInput(CreateRequestBody.parse(req.body));
+  await mutateClub(club => {
+    checkExpense(club, e);
+    club.requests.push({ id: randomUUID(), categoryId: e.categoryId, amount: e.amount, description: e.description, date: e.date,
+      status: "pending", reason: "cap", requestedAt: new Date().toISOString(), ...e.foreign });
+    log(club, req, "request", `طلب تجاوز سقف: ${e.description} ${fmt(e.amount)} د.ك`, `Over-cap request: ${e.description} KWD ${fmt(e.amount)}`);
+  });
+  res.status(201).json({ message: "انرسل الطلب لرئيس النادي", pending: true });
+});
+saqfiRouter.put("/bonus-rules", async (req, res) => {
+  const rules = SaveBonusRulesBody.parse(req.body);
+  money(rules.win, true); money(rules.draw, true);
+  await mutateClub(club => {
+    club.bonusRules = { win: rules.win, draw: rules.draw };
+    log(club, req, "settings", `مكافأة الفوز ${fmt(rules.win)} والتعادل ${fmt(rules.draw)} د.ك`, `Win bonus KWD ${fmt(rules.win)}, draw KWD ${fmt(rules.draw)}`);
+  });
+  res.json({ message: "تم حفظ المكافآت" });
+});
+saqfiRouter.post("/matches", async (req, res) => {
+  const m = CreateMatchBody.parse(req.body);
+  validDate(m.date);
+  if (m.opponent.trim().length < 2 || m.opponent.length > 80) throw new ClubError(400, "اكتب اسم الخصم", "Enter the opponent's name.");
+  let message = "";
+  await mutateClub(club => {
+    if (m.date < club.seasonStart || m.date > club.seasonEnd || m.date > today())
+      throw new ClubError(400, "تاريخ المباراة لازم داخل الموسم ومو بالمستقبل", "Match date must be in the season and not in the future.");
+    const ids = [...new Set(m.playerIds)];
+    if (ids.some(id => !club.contracts.some(c => c.id === id))) throw new ClubError(400, "في لاعب مو مسجل", "Unknown player.");
+    const result = m.goalsFor > m.goalsAgainst ? "W" : m.goalsFor === m.goalsAgainst ? "D" : "L";
+    const per = result === "W" ? club.bonusRules.win : result === "D" ? club.bonusRules.draw : 0;
+    const id = randomUUID();
+    const players = per > 0 ? ids : [];
+    const opponent = m.opponent.trim();
+    for (const playerId of players) club.adjustments.push({ id: randomUUID(), playerId, kind: "bonus", amount: per, date: m.date, matchId: id,
+      reason: `${result === "W" ? "مكافأة فوز" : "مكافأة تعادل"} على ${opponent}` });
+    const bonusTotal = kwd(fils(per) * players.length);
+    club.matches.push({ id, date: m.date, opponent, opponentEn: m.opponentEn.trim() || opponent, home: m.home,
+      goalsFor: m.goalsFor, goalsAgainst: m.goalsAgainst, competition: m.competition.trim() || "الدوري", result, bonusPlayers: players.length, bonusTotal });
+    log(club, req, "match", `نتيجة ${m.goalsFor}-${m.goalsAgainst} ضد ${opponent}${bonusTotal ? `، مكافآت ${fmt(bonusTotal)} د.ك` : ""}`,
+      `Result ${m.goalsFor}-${m.goalsAgainst} vs ${m.opponentEn.trim() || opponent}${bonusTotal ? `, bonuses KWD ${fmt(bonusTotal)}` : ""}`);
+    message = bonusTotal ? `انسجلت النتيجة وانحجزت مكافآت ${fmt(bonusTotal)} د.ك لـ ${players.length} لاعب` : "انسجلت النتيجة";
+  });
+  res.status(201).json({ message });
+});
+saqfiRouter.post("/adjustments", async (req, res) => {
+  const a = CreateAdjustmentBody.parse(req.body);
+  money(a.amount); validDate(a.date);
+  if (a.reason.trim().length < 2 || a.reason.length > 200) throw new ClubError(400, "اكتب السبب", "Enter a reason.");
+  await mutateClub(club => {
+    const c = club.contracts.find(x => x.id === a.playerId);
+    if (!c) throw new ClubError(404, "اللاعب غير موجود", "Player not found.");
+    if (a.date < club.seasonStart || a.date > today())
+      throw new ClubError(400, "التاريخ لازم داخل الموسم ومو بالمستقبل", "Date must be in the season and not in the future.");
+    if (a.kind === "fine" && pending(club, "fine", c.id) + fils(a.amount) > Math.round(fils(c.salary) * FINE_LIMIT))
+      throw new ClubError(400, `الغرامات المعلقة على اللاعب ما تتعدى نص راتبه (${fmt(c.salary * FINE_LIMIT)} د.ك)`,
+        `Pending fines may not exceed half the monthly salary (KWD ${fmt(c.salary * FINE_LIMIT)}).`);
+    club.adjustments.push({ id: randomUUID(), playerId: c.id, kind: a.kind, amount: a.amount, reason: a.reason.trim(), date: a.date });
+    log(club, req, a.kind, `${a.kind === "bonus" ? "مكافأة" : "غرامة"} ${fmt(a.amount)} د.ك على ${c.name}: ${a.reason.trim()}`,
+      `${a.kind === "bonus" ? "Bonus" : "Fine"} KWD ${fmt(a.amount)} for ${c.nameEn}: ${a.reason.trim()}`);
+  });
+  res.status(201).json({ message: a.kind === "bonus" ? "انحجزت المكافأة وبتنصرف مع الراتب الجاي" : "انسجلت الغرامة وبتنخصم من الراتب الجاي" });
+});
+saqfiRouter.delete("/adjustments/:id", async (req, res) => {
+  await mutateClub(club => {
+    const a = club.adjustments.find(x => x.id === req.params.id);
+    if (!a) throw new ClubError(404, "غير موجود", "Not found.");
+    if (a.settledMonth) throw new ClubError(409, "انصرفت مع الرواتب، ما تقدر تلغيها", "Already paid with payroll; it cannot be removed.");
+    if (a.matchId) throw new ClubError(409, "مكافآت المباراة مربوطة بنتيجتها", "Match bonuses are tied to the match result.");
+    club.adjustments = club.adjustments.filter(x => x.id !== a.id);
+    const c = club.contracts.find(x => x.id === a.playerId);
+    log(club, req, "cancel", `إلغاء ${a.kind === "bonus" ? "مكافأة" : "غرامة"} ${fmt(a.amount)} د.ك على ${c?.name ?? ""}`,
+      `Cancelled ${a.kind} KWD ${fmt(a.amount)} for ${c?.nameEn ?? ""}`);
+  });
+  res.json({ message: "تم الإلغاء" });
 });
 saqfiRouter.post("/payroll", async (req, res) => {
   const { month } = RunPayrollBody.parse(req.body);
@@ -159,10 +338,9 @@ saqfiRouter.post("/payroll", async (req, res) => {
     const state = snapshot(club, dataMode, today());
     if (month !== state.nextPayrollMonth)
       throw new ClubError(400, "ابدأ بأقدم شهر غير مدفوع ضمن الموسم", "Run the oldest unpaid month in the season first.");
-    const lines = club.contracts.filter(c => contractMonths(club, c).includes(month)).map(c => ({
-      playerId: c.id, name: c.name, salary: c.salary, bonus: 0, fine: 0, net: c.salary,
-    }));
+    const { lines, settle } = payrollLines(club, month);
     if (!lines.length) throw new ClubError(400, "لا توجد عقود مستحقة لهذا الشهر", "No eligible contracts for this month.");
+    for (const a of club.adjustments) if (settle.includes(a.id)) a.settledMonth = month;
     const total = kwd(lines.reduce((s, l) => s + fils(l.net), 0));
     const paidAt = new Date().toISOString();
     club.payrolls.push({ id: randomUUID(), month, total, paidAt, lines });
@@ -170,6 +348,7 @@ saqfiRouter.post("/payroll", async (req, res) => {
       id: randomUUID(), categoryId: "players", amount: total,
       description: `رواتب اللاعبين — ${month}`, date: today(), type: "payroll",
     });
+    log(club, req, "payroll", `صرف رواتب ${month}: ${fmt(total)} د.ك`, `Ran payroll for ${month}: KWD ${fmt(total)}`);
   });
   res.status(201).json({ message: "تم تسجيل الرواتب محاسبيًا؛ لم يحدث أي تحويل بنكي" });
 });

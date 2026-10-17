@@ -12,4 +12,5 @@ export interface ExpenseInput {
   /** @minLength 2 */
   description: string;
   date: string;
+  currency?: string;
 }

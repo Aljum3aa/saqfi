@@ -33,7 +33,8 @@ export const LoginDemoResponse = zod.object({
 
 
 export const LogoutResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
 })
 
 
@@ -42,6 +43,10 @@ export const getClubStateResponseContractsItemOneNameMin = 2;
 export const getClubStateResponseContractsItemOneNameEnMin = 2;
 
 export const getClubStateResponseContractsItemOneSalaryExclusiveMin = 0;
+
+export const getClubStateResponseBonusRulesWinMin = 0;
+
+export const getClubStateResponseBonusRulesDrawMin = 0;
 
 
 
@@ -71,7 +76,9 @@ export const GetClubStateResponse = zod.object({
 }).and(zod.object({
   "id": zod.string(),
   "totalCost": zod.number(),
-  "outstanding": zod.number()
+  "outstanding": zod.number(),
+  "pendingBonus": zod.number(),
+  "pendingFine": zod.number()
 }))),
   "payrolls": zod.array(zod.object({
   "id": zod.string(),
@@ -93,7 +100,10 @@ export const GetClubStateResponse = zod.object({
   "amount": zod.number(),
   "description": zod.string(),
   "date": zod.string(),
-  "type": zod.string()
+  "type": zod.string(),
+  "currency": zod.string().optional(),
+  "originalAmount": zod.number().optional(),
+  "rate": zod.number().optional()
 })),
   "alerts": zod.array(zod.object({
   "id": zod.string(),
@@ -111,7 +121,67 @@ export const GetClubStateResponse = zod.object({
   "forecast": zod.number(),
   "monthlyPayroll": zod.number(),
   "nextPayrollMonth": zod.string(),
-  "today": zod.string()
+  "today": zod.string(),
+  "adjustments": zod.array(zod.object({
+  "id": zod.string(),
+  "playerId": zod.string(),
+  "kind": zod.enum(['bonus', 'fine']),
+  "amount": zod.number(),
+  "reason": zod.string(),
+  "date": zod.string(),
+  "matchId": zod.string().optional(),
+  "settledMonth": zod.string().optional()
+})),
+  "matches": zod.array(zod.object({
+  "id": zod.string(),
+  "date": zod.string(),
+  "opponent": zod.string(),
+  "opponentEn": zod.string(),
+  "home": zod.boolean(),
+  "goalsFor": zod.number().int(),
+  "goalsAgainst": zod.number().int(),
+  "competition": zod.string(),
+  "result": zod.enum(['W', 'D', 'L']),
+  "bonusPlayers": zod.number().int(),
+  "bonusTotal": zod.number()
+})),
+  "bonusRules": zod.object({
+  "win": zod.number().min(getClubStateResponseBonusRulesWinMin),
+  "draw": zod.number().min(getClubStateResponseBonusRulesDrawMin)
+}),
+  "approvalThreshold": zod.number(),
+  "requests": zod.array(zod.object({
+  "id": zod.string(),
+  "categoryId": zod.string(),
+  "amount": zod.number(),
+  "description": zod.string(),
+  "date": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "reason": zod.enum(['threshold', 'cap']),
+  "requestedAt": zod.string(),
+  "decidedAt": zod.string().optional(),
+  "note": zod.string().optional(),
+  "fromReserve": zod.number().optional(),
+  "currency": zod.string().optional(),
+  "originalAmount": zod.number().optional(),
+  "rate": zod.number().optional()
+})),
+  "audit": zod.array(zod.object({
+  "id": zod.string(),
+  "at": zod.string(),
+  "role": zod.string(),
+  "action": zod.string(),
+  "detail": zod.string(),
+  "detailEn": zod.string()
+})),
+  "pendingBonuses": zod.number(),
+  "pendingFines": zod.number(),
+  "insights": zod.array(zod.object({
+  "id": zod.string(),
+  "message": zod.string(),
+  "messageEn": zod.string(),
+  "tone": zod.enum(['good', 'warn', 'bad'])
+}))
 })
 
 
@@ -129,7 +199,8 @@ export const SaveBudgetBody = zod.object({
 })
 
 export const SaveBudgetResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
 })
 
 
@@ -151,7 +222,8 @@ export const CreateContractBody = zod.object({
 })
 
 export const CreateContractResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
 })
 
 
@@ -165,11 +237,13 @@ export const CreateExpenseBody = zod.object({
   "categoryId": zod.string(),
   "amount": zod.number().gt(createExpenseBodyAmountExclusiveMin),
   "description": zod.string().min(createExpenseBodyDescriptionMin),
-  "date": zod.string()
+  "date": zod.string(),
+  "currency": zod.string().optional()
 })
 
 export const CreateExpenseResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
 })
 
 
@@ -181,7 +255,156 @@ export const RunPayrollBody = zod.object({
 })
 
 export const RunPayrollResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const createMatchBodyOpponentMin = 2;
+
+export const createMatchBodyGoalsForMin = 0;
+export const createMatchBodyGoalsForMax = 30;
+
+export const createMatchBodyGoalsAgainstMin = 0;
+export const createMatchBodyGoalsAgainstMax = 30;
+
+
+
+export const CreateMatchBody = zod.object({
+  "date": zod.string(),
+  "opponent": zod.string().min(createMatchBodyOpponentMin),
+  "opponentEn": zod.string(),
+  "home": zod.boolean(),
+  "goalsFor": zod.number().int().min(createMatchBodyGoalsForMin).max(createMatchBodyGoalsForMax),
+  "goalsAgainst": zod.number().int().min(createMatchBodyGoalsAgainstMin).max(createMatchBodyGoalsAgainstMax),
+  "competition": zod.string(),
+  "playerIds": zod.array(zod.string())
+})
+
+export const CreateMatchResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const createAdjustmentBodyAmountExclusiveMin = 0;
+
+export const createAdjustmentBodyReasonMin = 2;
+
+
+
+export const CreateAdjustmentBody = zod.object({
+  "playerId": zod.string(),
+  "kind": zod.enum(['bonus', 'fine']),
+  "amount": zod.number().gt(createAdjustmentBodyAmountExclusiveMin),
+  "reason": zod.string().min(createAdjustmentBodyReasonMin),
+  "date": zod.string()
+})
+
+export const CreateAdjustmentResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const DeleteAdjustmentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteAdjustmentResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const saveBonusRulesBodyWinMin = 0;
+
+export const saveBonusRulesBodyDrawMin = 0;
+
+
+
+export const SaveBonusRulesBody = zod.object({
+  "win": zod.number().min(saveBonusRulesBodyWinMin),
+  "draw": zod.number().min(saveBonusRulesBodyDrawMin)
+})
+
+export const SaveBonusRulesResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const saveApprovalThresholdBodyThresholdMin = 0;
+
+
+
+export const SaveApprovalThresholdBody = zod.object({
+  "threshold": zod.number().min(saveApprovalThresholdBodyThresholdMin)
+})
+
+export const SaveApprovalThresholdResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const createRequestBodyAmountExclusiveMin = 0;
+
+export const createRequestBodyDescriptionMin = 2;
+
+
+
+export const CreateRequestBody = zod.object({
+  "categoryId": zod.string(),
+  "amount": zod.number().gt(createRequestBodyAmountExclusiveMin),
+  "description": zod.string().min(createRequestBodyDescriptionMin),
+  "date": zod.string(),
+  "currency": zod.string().optional()
+})
+
+export const CreateRequestResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const DecideRequestParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DecideRequestBody = zod.object({
+  "approve": zod.boolean(),
+  "note": zod.string().optional()
+})
+
+export const DecideRequestResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const askAdvisorBodyQuestionMin = 2;
+export const askAdvisorBodyQuestionMax = 500;
+
+
+
+export const AskAdvisorBody = zod.object({
+  "question": zod.string().min(askAdvisorBodyQuestionMin).max(askAdvisorBodyQuestionMax),
+  "lang": zod.enum(['ar', 'en']).optional()
+})
+
+export const AskAdvisorResponse = zod.object({
+  "answer": zod.string(),
+  "answerEn": zod.string(),
+  "source": zod.enum(['ai', 'rules'])
+})
+
+
+export const GetRatesResponse = zod.object({
+  "base": zod.string(),
+  "updated": zod.string(),
+  "source": zod.string(),
+  "rates": zod.record(zod.string(), zod.number())
 })
 
 

@@ -1,5 +1,5 @@
-import type { Club, Payroll } from "./types";
-import { fils, kwd } from "./finance";
+import type { Adjustment, Club, Match, Payroll } from "./types";
+import { fils, kwd, payrollLines } from "./finance";
 
 export function seedClub(): Club {
   const names = [
@@ -28,14 +28,34 @@ export function seedClub(): Club {
     id: `player-${i + 1}`, name: name!, nameEn: nameEn!, position: position!,
     salary: 650 + i * 35, start: "2026-07-01", end: "2027-06-30",
   }));
-  const payrolls: Payroll[] = ["2026-07", "2026-08", "2026-09"].map(month => {
-    const lines = contracts.map(c => ({
-      playerId: c.id, name: c.name, salary: c.salary, bonus: 0, fine: 0, net: c.salary,
-    }));
-    return { id: `payroll-${month}`, month, lines,
-      total: kwd(lines.reduce((s, l) => s + fils(l.net), 0)), paidAt: `${month}-28T10:00:00.000Z` };
+  const bonusRules = { win: 150, draw: 50 };
+  // Fictional opponents. The match-day squad (first 18) earns the result bonus.
+  const fixtures: [string, string, string, boolean, number, number][] = [
+    ["2026-09-04", "نادي النجوم", "Al-Nujoom", true, 2, 0],
+    ["2026-09-12", "نادي الشروق", "Al-Shorouq", false, 1, 1],
+    ["2026-09-19", "نادي البحّارة", "Al-Bahhara", true, 0, 1],
+    ["2026-10-03", "نادي الوادي", "Al-Wadi", false, 3, 1],
+    ["2026-10-11", "نادي الريان الشمالي", "North Rayyan", true, 2, 2],
+  ];
+  const squad = contracts.slice(0, 18).map(c => c.id);
+  const adjustments: Adjustment[] = [];
+  const matches: Match[] = fixtures.map(([date, opponent, opponentEn, home, gf, ga], i) => {
+    const result = gf > ga ? "W" : gf === ga ? "D" : "L";
+    const per = result === "W" ? bonusRules.win : result === "D" ? bonusRules.draw : 0;
+    const id = `match-${i + 1}`;
+    if (per > 0) for (const playerId of squad) adjustments.push({
+      id: `${id}-${playerId}`, playerId, kind: "bonus", amount: per, date, matchId: id,
+      reason: `${result === "W" ? "مكافأة فوز" : "مكافأة تعادل"} على ${opponent}`,
+    });
+    return { id, date, opponent, opponentEn, home, goalsFor: gf, goalsAgainst: ga, competition: "الدوري",
+      result, bonusPlayers: per > 0 ? squad.length : 0, bonusTotal: per * (per > 0 ? squad.length : 0) };
   });
-  return {
+  adjustments.push(
+    { id: "fine-1", playerId: "player-7", kind: "fine", amount: 50, reason: "تأخر عن التدريب", date: "2026-09-09" },
+    { id: "fine-2", playerId: "player-11", kind: "fine", amount: 100, reason: "بطاقة حمراء بسبب الاعتراض", date: "2026-10-11" },
+    { id: "bonus-x", playerId: "player-3", kind: "bonus", amount: 200, reason: "هدف الجولة", date: "2026-10-03" },
+  );
+  const club: Club = {
     id: "saqfi-demo-club", revision: 0,
     club: "نادي الصقور", clubEn: "Al-Suqoor FC",
     seasonStart: "2026-07-01", seasonEnd: "2027-06-30", totalBudget: 400000,
@@ -46,18 +66,44 @@ export function seedClub(): Club {
       { id: "equipment", name: "الأطقم والمعدات", nameEn: "Kits & equipment", cap: 25000 },
       { id: "reserve", name: "الاحتياطي", nameEn: "Reserve", cap: 15000 },
     ],
-    contracts, payrolls,
+    contracts, payrolls: [], adjustments, matches, bonusRules, approvalThreshold: 5000,
     transactions: [
-      ...payrolls.map(p => ({ id: `txn-${p.month}`, categoryId: "players", amount: p.total,
-        description: `رواتب اللاعبين — ${p.month}`, date: p.paidAt.slice(0, 10), type: "payroll" })),
       { id: "staff-jul", categoryId: "staff", amount: 5000, description: "رواتب الجهاز الفني — يوليو", date: "2026-07-28", type: "expense" },
       { id: "staff-aug", categoryId: "staff", amount: 5000, description: "رواتب الجهاز الفني — أغسطس", date: "2026-08-28", type: "expense" },
       { id: "staff-sep", categoryId: "staff", amount: 5000, description: "رواتب الجهاز الفني — سبتمبر", date: "2026-09-28", type: "expense" },
-      { id: "camp-jul", categoryId: "travel", amount: 24000, description: "معسكر الإعداد الصيفي", date: "2026-07-15", type: "expense" },
+      { id: "camp-jul", categoryId: "travel", amount: 24000, description: "معسكر الإعداد الصيفي في تركيا", date: "2026-07-15", type: "expense",
+        currency: "EUR", originalAmount: 70800, rate: 2.95 },
       { id: "travel-aug", categoryId: "travel", amount: 6500, description: "إقامة وتنقلات الفريق", date: "2026-08-18", type: "expense" },
       { id: "travel-sep", categoryId: "travel", amount: 6300, description: "حجوزات سفر الفريق", date: "2026-09-20", type: "expense" },
       { id: "kits", categoryId: "equipment", amount: 12500, description: "أطقم الموسم الجديد", date: "2026-07-10", type: "expense" },
       { id: "balls", categoryId: "equipment", amount: 3250, description: "معدات التدريب والكرات", date: "2026-08-08", type: "expense" },
     ],
+    requests: [{
+      id: "req-doha", categoryId: "travel", amount: 9000, description: "معسكر الدوحة الشتوي", date: "2026-10-15",
+      status: "pending", reason: "threshold", requestedAt: "2026-10-15T09:30:00.000Z",
+      currency: "QAR", originalAmount: 106650, rate: 11.85,
+    }],
+    audit: [],
   };
+  // Run the seeded months through the same payroll logic the API uses.
+  for (const month of ["2026-07", "2026-08", "2026-09"]) {
+    const { lines, settle } = payrollLines(club, month);
+    for (const a of club.adjustments) if (settle.includes(a.id)) a.settledMonth = month;
+    const p: Payroll = { id: `payroll-${month}`, month, lines, paidAt: `${month}-28T10:00:00.000Z`,
+      total: kwd(lines.reduce((s, l) => s + fils(l.net), 0)) };
+    club.payrolls.push(p);
+    club.transactions.push({ id: `txn-${month}`, categoryId: "players", amount: p.total,
+      description: `رواتب اللاعبين — ${month}`, date: p.paidAt.slice(0, 10), type: "payroll" });
+  }
+  const at = (d: string, h: string) => `${d}T${h}:00.000Z`;
+  club.audit = [
+    { id: "a1", at: at("2026-07-01", "08:00"), role: "president", action: "budget", detail: "اعتماد ميزانية الموسم 400,000 د.ك", detailEn: "Approved the season budget of KWD 400,000" },
+    ...club.payrolls.map((p, i) => ({ id: `a-p${i}`, at: p.paidAt, role: "manager" as const, action: "payroll",
+      detail: `صرف رواتب ${p.month}: ${Math.round(p.total).toLocaleString("en-US")} د.ك`, detailEn: `Ran payroll for ${p.month}: KWD ${Math.round(p.total).toLocaleString("en-US")}` })),
+    ...club.matches.map((m, i) => ({ id: `a-m${i}`, at: at(m.date, "22:00"), role: "manager" as const, action: "match",
+      detail: `نتيجة ${m.goalsFor}-${m.goalsAgainst} ضد ${m.opponent}${m.bonusTotal ? `، مكافآت ${m.bonusTotal} د.ك` : ""}`,
+      detailEn: `Result ${m.goalsFor}-${m.goalsAgainst} vs ${m.opponentEn}${m.bonusTotal ? `, bonuses KWD ${m.bonusTotal}` : ""}` })),
+    { id: "a-req", at: "2026-10-15T09:30:00.000Z", role: "manager", action: "request", detail: "طلب موافقة: معسكر الدوحة الشتوي 9,000 د.ك", detailEn: "Approval requested: Doha winter camp KWD 9,000" },
+  ];
+  return club;
 }
