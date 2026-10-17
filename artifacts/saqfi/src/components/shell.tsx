@@ -42,8 +42,11 @@ export function LangToggle({ className }: { className?: string }) {
   );
 }
 
-export const clubCrest = () => `${import.meta.env.BASE_URL}club/crest.webp`;
-export const clubKit = () => `${import.meta.env.BASE_URL}club/kit.webp`;
+import crestUrl from '@assets/crest_1792268676116.webp';
+import kitUrl from '@assets/kit_1792268676116.webp';
+/* Fictional demo club identity (Gemini): Al-Suqoor FC crest + home kit */
+export const clubCrest = () => crestUrl;
+export const clubKit = () => kitUrl;
 const seasonLabel = (s?: ClubState) => (s ? `${s.seasonStart.slice(0, 4)}/${s.seasonEnd.slice(2, 4)}` : '');
 
 export function useClub() {
