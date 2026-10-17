@@ -76,14 +76,14 @@ function AdvisorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   );
 }
 
-function Brand({ s }: { s?: ClubState }) {
+function Brand({ s, mobile = false }: { s?: ClubState; mobile?: boolean }) {
   const { t } = useLang();
   return (
-    <Link href="/dashboard" className="flex items-center gap-3 min-h-11" data-testid="link-home">
+    <Link href="/dashboard" className={cn('flex items-center gap-3 min-h-11', mobile && 'max-lg:min-w-0 max-lg:[&>svg]:shrink-0')} data-testid="link-home">
       <Mark size={36} />
-      <div className="leading-tight">
+      <div className={cn('leading-tight', mobile && 'max-lg:min-w-0')}>
         <div className="font-bold text-[18px]">{t('سقفي', 'Saqfi')}</div>
-        <div className="text-[13px] text-muted-foreground">{s ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
+        <div className={cn('text-[13px] text-muted-foreground', mobile && 'hidden min-[360px]:block max-lg:truncate')}>{s ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
       </div>
     </Link>
   );
@@ -154,7 +154,7 @@ export function Shell({ session, children }: { session: Session; children: React
         {/* Top bar: always on mobile, and for the player view on desktop */}
         <header className={cn('sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur', !isPlayer && 'lg:hidden')}>
           <div className="mx-auto max-w-[1100px] px-4 md:px-6 h-16 flex items-center gap-2">
-            <Brand s={s} />
+            <Brand s={s} mobile />
             <div className="ms-auto flex items-center gap-1">
               {!isPlayer && (
                 <button onClick={() => setAdvisor(true)} data-testid="button-advisor-mobile" aria-label={t('المستشار', 'Advisor')}
