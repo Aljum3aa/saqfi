@@ -41,9 +41,10 @@ async function check(page, name) {
         return r.width > 0 && r.height > 0 && (r.left < -1 || r.right > width + 1);
       }).map(e => `${e.tagName}:${e.getAttribute('data-testid') || e.textContent?.slice(0, 40)}`);
     const main = document.querySelector('main');
-    const strip = document.querySelector('[data-testid="status-mode"] > div');
+    const strip = [...document.querySelectorAll('[data-testid="status-mode"], main > div.truncate')]
+      .find(e => e.getBoundingClientRect().width > 0);
     return {
-      width, overflow, outside, titleCount: (main || document).querySelectorAll('h1').length,
+      width, overflow, outside, titleCount: [...(main || document).querySelectorAll('h1')].filter(e => e.getBoundingClientRect().width > 0).length,
       bodyFontSize: getComputedStyle(document.body).fontSize,
       font: getComputedStyle(document.body).fontFamily,
       background: getComputedStyle(document.body).backgroundColor,
@@ -52,6 +53,7 @@ async function check(page, name) {
       title: document.title,
       statusText: strip?.textContent,
       statusWhiteSpace: strip && getComputedStyle(strip).whiteSpace,
+      boldWeights: [...document.querySelectorAll('.font-bold')].filter(e=>e.getBoundingClientRect().width > 0).map(e=>getComputedStyle(e).fontWeight),
     };
   });
   await page.screenshot({ path: `${output}/${name}.jpg`, type: 'jpeg', quality: 75 });
@@ -60,12 +62,13 @@ async function check(page, name) {
   expect(measurements.outside, `${name}: offscreen controls`).toEqual([]);
   expect(measurements.titleCount, `${name}: one page title`).toBe(1);
   expect(measurements.bodyFontSize).toBe('16px');
+  expect(measurements.boldWeights.every(w => w === '700'), `${name}: bold font weight`).toBe(true);
   expect(measurements.visibleText, `${name}: no long dashes`).not.toMatch(/[—–]/);
   expect(measurements.title, `${name}: no long dashes in title`).not.toMatch(/[—–]/);
   expect(measurements.visibleText, `${name}: named months, not ISO dates`).not.toMatch(/\b\d{4}-(?:0[1-9]|1[0-2])\b/);
   if (measurements.statusText) {
-    expect(measurements.statusText).toMatch(/^(?:المدير المالي|رئيس النادي|لاعب|Finance manager|Club president|Player) · (?:بيانات تجريبية|Demo data)$/);
-    expect(measurements.statusWhiteSpace).toBe('nowrap');
+    expect(measurements.statusText).toMatch(/^(?:(?:المدير المالي|رئيس النادي|لاعب|Finance manager|Club president|Player) · )?(?:بيانات تجريبية|Demo data)$/);
+    if (measurements.width === 375) expect(measurements.statusWhiteSpace).toBe('nowrap');
   }
 }
 
@@ -105,7 +108,7 @@ try {
           }
         }
       }
-      await page.getByTestId('button-advisor').click();
+      await page.getByTestId(width === 375 ? 'button-advisor-mobile' : 'button-advisor').click();
       await expect(page.getByTestId('dialog-advisor')).toBeVisible();
       await check(page, `advisor-${width}-${lang}`);
       await page.getByTestId('button-close-advisor').click();
@@ -142,7 +145,7 @@ try {
       for (const key of ['totalBudget', 'categories', 'contracts', 'payrolls', 'transactions'])
         expect(after[key], `${key}: rejection must not change financial data`).toEqual(before[key]);
       // Check role switching through actual UI, not fake client state.
-      await page.getByTestId('button-logout').click();
+      await page.getByTestId(width === 375 ? 'button-logout-mobile' : 'button-logout').click();
       await expect(page.getByTestId('button-login-president')).toBeVisible();
       await page.getByTestId('button-login-president').click();
       await expect(page.getByTestId('text-kpi-budget')).toBeVisible();
@@ -155,7 +158,7 @@ try {
       }
       const denied = await page.request.post('/api/saqfi/payroll', { data: { month: '2026-10' } });
       expect(denied.status()).toBe(403);
-      await page.getByTestId('button-logout').click();
+      await page.getByTestId(width === 375 ? 'button-logout-mobile' : 'button-logout').click();
       await expect(page.getByTestId('button-login-player')).toBeVisible();
       await page.getByTestId('button-login-player').click();
       await expect(page.getByTestId('card-own-contract-player-1')).toBeVisible();

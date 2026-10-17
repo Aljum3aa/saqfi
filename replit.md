@@ -120,28 +120,23 @@ No payments are required. Any future payment experiments must use Stripe test mo
 
 ## Interface direction
 
-The user wants Saqfi simple, organised and easy to use, like a clean Kuwaiti bank
-app, not a flashy tech demo. Preserve this direction in later features.
+The user's supplied designer handoff is authoritative. Use provided component
+files exactly as supplied. Only fix demonstrated integration or runtime
+breakages; do not rewrite or visually "improve" the designer's work.
 
-- Off-white background, white cards, thin light-grey borders, soft shadows,
-  near-black text. Deep navy is the only brand/action accent; gold ONLY in logo.
+- Cool-paper background, white cards, deep navy brand/action colour, gold for the
+  logo and budget-cap line. Root and dark token values intentionally match.
 - Green means paid/good, amber warning, red over-cap/rejected.
-- No decorative grids, gradients, glows, stripes, numbering, dots or tiny
-  uppercase eyebrow labels. One Arabic font: IBM Plex Sans Arabic, 400/600.
+- One Arabic font: IBM Plex Sans Arabic, weights 400, 500, 600 and 700.
 - Readable 16px body, generous spacing, 12px corners and 44px touch targets.
 - Five sections: الرئيسية، الميزانية، اللاعبين والعقود، الرواتب، المصاريف.
-  Mobile bottom tabs; desktop simple top navigation. Advisor is a separate button.
-- Home has only the budget summary, attention list, category list and a one-sentence
-  forecast. Monthly spending chart belongs on the budget page.
-- Remaining in the home summary means budget minus spending. Always distinguish
-  salary reservations from genuinely spendable money elsewhere in the same card.
+  Mobile bottom tabs; desktop sidebar. Advisor is a separate button.
+- The home summary prominently shows genuinely spendable money after salary
+  reservations, and distinguishes spent, reserved and the season cap.
 - Plain short Kuwaiti/Gulf Arabic, one page title/short explanation/main action.
   Empty states explain what to do. Cap failures explain amount and next steps.
 - Mobile tables become stacked cards; verify every page at 375px and desktop.
 - Advisor availability dialog is honest about the feature not being active yet;
   it is not an implemented AI assistant and must not fabricate answers.
-- The user approved this redesign and asked to keep it exactly as it is. Make only
-  specifically requested polish changes, not another visual redesign.
 - No em/en dashes in visible wording. Show month names instead of ISO month dates;
-  keep stored ISO values intact. The status strip is one short, non-wrapping line
-  with the role once and the data mode.
+  keep stored ISO values intact. Keep the mobile role/data-mode line short.

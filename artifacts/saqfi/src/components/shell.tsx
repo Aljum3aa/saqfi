@@ -13,14 +13,15 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
-export function Mark({ size = 34 }: { size?: number }) {
+/** The Saqfi mark: a gold cap line with three budget bars under it, none crossing it (Gemini concept, redrawn as vector). */
+export function Mark({ size = 34, tile = true }: { size?: number; tile?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden>
-      <rect x="0" y="0" width="40" height="40" rx="11" fill="hsl(214 60% 22%)" />
-      <path d="M9 15 L20 9 L31 15" fill="none" stroke="hsl(43 70% 58%)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="11" y="21" width="4" height="10" rx="1.5" fill="hsl(43 70% 58%)" />
-      <rect x="18" y="18" width="4" height="13" rx="1.5" fill="hsl(43 70% 58%)" />
-      <rect x="25" y="23" width="4" height="8" rx="1.5" fill="hsl(43 70% 58%)" />
+    <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden>
+      {tile && <rect width="1024" height="1024" rx="232" fill="#14284B" />}
+      <rect x="256" y="256" width="512" height="54" rx="10" fill="#C9A24A" />
+      <rect x="299" y="488" width="113" height="280" rx="10" fill={tile ? '#FFFFFF' : '#14284B'} />
+      <rect x="455" y="350" width="113" height="418" rx="10" fill={tile ? '#FFFFFF' : '#14284B'} />
+      <rect x="612" y="442" width="113" height="326" rx="10" fill={tile ? '#FFFFFF' : '#14284B'} />
     </svg>
   );
 }
@@ -31,7 +32,7 @@ export function LangToggle({ className }: { className?: string }) {
     <button
       data-testid="button-lang"
       onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-      className={cn('inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm hover:bg-muted transition-colors', className)}
+      className={cn('inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-foreground/80 hover:bg-muted transition-colors', className)}
     >
       <Languages className="h-4 w-4" />
       {lang === 'ar' ? 'English' : 'العربية'}
@@ -75,6 +76,19 @@ function AdvisorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   );
 }
 
+function Brand({ s }: { s?: ClubState }) {
+  const { t } = useLang();
+  return (
+    <Link href="/dashboard" className="flex items-center gap-3 min-h-11" data-testid="link-home">
+      <Mark size={36} />
+      <div className="leading-tight">
+        <div className="font-bold text-[18px]">{t('سقفي', 'Saqfi')}</div>
+        <div className="text-[13px] text-muted-foreground">{s ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
+      </div>
+    </Link>
+  );
+}
+
 export function Shell({ session, children }: { session: Session; children: ReactNode }) {
   const { t } = useLang();
   const { toast } = useToast();
@@ -96,55 +110,74 @@ export function Shell({ session, children }: { session: Session; children: React
   const isPlayer = session.role === 'player';
   const s = club.data as ClubState | undefined;
   const active = (h: string) => loc === h || (h === '/dashboard' && loc === '/');
+  const modeText = s?.mode === 'demo' ? t('بيانات تجريبية', 'Demo data') : s?.mode === 'database' ? t('قاعدة البيانات', 'Database') : '';
 
   return (
-    <div className="min-h-[100dvh] flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-border bg-card">
-        <div className="mx-auto max-w-[1200px] px-4 md:px-6 h-16 flex items-center gap-3">
-          <Link href="/dashboard" className="flex items-center gap-3 shrink-0 min-h-11" data-testid="link-home">
-            <Mark size={34} />
-            <div className="leading-tight">
-              <div className="font-semibold text-[17px]">{t('سقفي', 'Saqfi')}</div>
-              <div className="text-[13px] text-muted-foreground hidden sm:block">{s ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
-            </div>
-          </Link>
-          {!isPlayer && (
-            <nav className="hidden lg:flex items-center gap-1 mx-auto">
-              {NAV.map((n) => (
-                <Link key={n.href} href={n.href} data-testid={`link-nav-${n.href.slice(1)}`}
-                  className={cn('min-h-11 inline-flex items-center px-3.5 rounded-lg text-[15px] transition-colors',
-                    active(n.href) ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-muted')}>
+    <div className="min-h-[100dvh] lg:flex">
+      {/* Desktop: fixed side menu on the start side (right in Arabic) */}
+      {!isPlayer && (
+        <aside className="hidden lg:flex lg:flex-col w-[264px] shrink-0 sticky top-0 h-[100dvh] border-e border-border bg-card px-4 py-5">
+          <div className="px-2"><Brand s={s} /></div>
+          <nav className="mt-8 flex flex-col gap-1" aria-label={t('الأقسام', 'Sections')}>
+            {NAV.map((n) => {
+              const Icon = n.icon;
+              const on = active(n.href);
+              return (
+                <Link key={n.href} href={n.href} data-testid={`link-nav-${n.href.slice(1)}`} aria-current={on ? 'page' : undefined}
+                  className={cn('min-h-11 flex items-center gap-3 px-3 rounded-lg text-[15px] transition-colors',
+                    on ? 'bg-primary text-primary-foreground font-semibold' : 'text-foreground/80 hover:bg-muted')}>
+                  <Icon className="h-[18px] w-[18px]" />
                   {t(n.ar, n.en)}
                 </Link>
-              ))}
-            </nav>
-          )}
-          <div className={cn('flex items-center gap-2 ms-auto', !isPlayer && 'lg:ms-0')}>
-            {!isPlayer && (
-              <button onClick={() => setAdvisor(true)} data-testid="button-advisor" aria-label={t('المستشار', 'Advisor')}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-sm hover:bg-muted">
-                <MessageCircleQuestion className="hidden sm:block h-4 w-4" />
-                <span>{t('المستشار', 'Advisor')}</span>
-              </button>
-            )}
-            <LangToggle />
-            <Button size="icon" variant="ghost" data-testid="button-logout" disabled={logout.isPending} onClick={() => logout.mutate()} aria-label={t('خروج', 'Sign out')} title={t('خروج', 'Sign out')}>
-              <LogOut className="h-4 w-4 rtl:rotate-180" />
-            </Button>
+              );
+            })}
+          </nav>
+          <button onClick={() => setAdvisor(true)} data-testid="button-advisor"
+            className="mt-4 min-h-11 flex items-center gap-3 px-3 rounded-lg border border-border text-[15px] hover:bg-muted">
+            <MessageCircleQuestion className="h-[18px] w-[18px]" />
+            {t('اسأل المستشار', 'Ask the advisor')}
+          </button>
+          <div className="mt-auto border-t border-border pt-4 px-1">
+            <div className="text-[15px] font-semibold" data-testid="text-session-role">{roleLabel(session.role, t)}</div>
+            {modeText && <div className="text-[13px] text-muted-foreground" data-testid="status-mode">{modeText}</div>}
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <LangToggle className="px-2" />
+              <Button size="sm" variant="ghost" data-testid="button-logout" disabled={logout.isPending} onClick={() => logout.mutate()}>
+                <LogOut className="h-4 w-4 rtl:rotate-180" />{t('خروج', 'Sign out')}
+              </Button>
+            </div>
           </div>
-        </div>
-      </header>
-      <div className="border-b border-border bg-background text-[13px] text-muted-foreground" data-testid="status-mode">
-        <div className="mx-auto max-w-[1200px] px-4 md:px-6 py-2 truncate whitespace-nowrap">
-          <span className="text-foreground" data-testid="text-session-role">{roleLabel(session.role, t)}</span>
-          {s?.mode === 'demo' && <span> · {t('بيانات تجريبية', 'Demo data')}</span>}
-          {s?.mode === 'database' && !isPlayer && <span> · {t('قاعدة البيانات', 'Database')}</span>}
-        </div>
+        </aside>
+      )}
+
+      <div className="flex-1 min-w-0 flex flex-col min-h-[100dvh]">
+        {/* Top bar: always on mobile, and for the player view on desktop */}
+        <header className={cn('sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur', !isPlayer && 'lg:hidden')}>
+          <div className="mx-auto max-w-[1100px] px-4 md:px-6 h-16 flex items-center gap-2">
+            <Brand s={s} />
+            <div className="ms-auto flex items-center gap-1">
+              {!isPlayer && (
+                <button onClick={() => setAdvisor(true)} data-testid="button-advisor-mobile" aria-label={t('المستشار', 'Advisor')}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg hover:bg-muted">
+                  <MessageCircleQuestion className="h-5 w-5" />
+                </button>
+              )}
+              <LangToggle />
+              <Button size="icon" variant="ghost" data-testid="button-logout-mobile" disabled={logout.isPending} onClick={() => logout.mutate()} aria-label={t('خروج', 'Sign out')}>
+                <LogOut className="h-4 w-4 rtl:rotate-180" />
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <main className={cn('flex-1 mx-auto w-full max-w-[1100px] px-4 md:px-8 py-6 md:py-10', !isPlayer && 'pb-28 lg:pb-12')}>
+          {modeText && (
+            <div className="lg:hidden mb-5 text-[13px] text-muted-foreground truncate">{roleLabel(session.role, t)} · {modeText}</div>
+          )}
+          {children}
+        </main>
       </div>
-      <main className={cn('flex-1 mx-auto w-full max-w-[1200px] px-4 md:px-6 py-6 md:py-10', !isPlayer && 'pb-28 lg:pb-10')}>{children}</main>
-      <footer className={cn('border-t border-border py-4 text-center text-[13px] text-muted-foreground', !isPlayer && 'hidden lg:block')}>
-        {t('سقفي · جميع المبالغ بالدينار الكويتي', 'Saqfi · All amounts in Kuwaiti dinar')}
-      </footer>
+
       {!isPlayer && (
         <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]" data-testid="nav-mobile">
           <div className="grid grid-cols-5">
@@ -152,9 +185,9 @@ export function Shell({ session, children }: { session: Session; children: React
               const Icon = n.icon;
               const on = active(n.href);
               return (
-                <Link key={n.href} href={n.href} data-testid={`link-tab-${n.href.slice(1)}`}
-                  className={cn('flex flex-col items-center justify-center gap-1 min-h-[60px] px-1 text-[12px] leading-tight', on ? 'text-primary font-semibold' : 'text-muted-foreground')}>
-                  <span className={cn('inline-flex h-7 w-12 items-center justify-center rounded-lg', on && 'bg-accent')}><Icon className="h-5 w-5" /></span>
+                <Link key={n.href} href={n.href} data-testid={`link-tab-${n.href.slice(1)}`} aria-current={on ? 'page' : undefined}
+                  className={cn('flex flex-col items-center justify-center gap-1 min-h-[62px] px-1 text-[12px] leading-tight', on ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+                  <span className={cn('inline-flex h-7 w-12 items-center justify-center rounded-full', on && 'bg-accent')}><Icon className="h-5 w-5" /></span>
                   <span className="text-center">{t(n.sar, n.sen)}</span>
                 </Link>
               );
@@ -169,10 +202,10 @@ export function Shell({ session, children }: { session: Session; children: React
 
 export function PageHead({ title, sub, action }: { title: string; sub?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
       <div>
-        <h1 className="text-[28px] md:text-[32px] font-semibold leading-tight">{title}</h1>
-        {sub && <p className="text-muted-foreground mt-2 max-w-2xl">{sub}</p>}
+        <h1 className="text-[28px] md:text-[34px] font-bold leading-tight tracking-tight">{title}</h1>
+        {sub && <p className="text-muted-foreground mt-1.5 max-w-2xl">{sub}</p>}
       </div>
       {action && <div className="shrink-0 [&>*]:w-full sm:[&>*]:w-auto">{action}</div>}
     </div>
@@ -185,7 +218,7 @@ export function Money({ v, className, unit = true, exact = false }: { v: number;
   return (
     <span className={cn('whitespace-nowrap', className)}>
       <span className="num">{v < 0 ? '-' : ''}{kwd(Math.abs(v), exact)}</span>
-      {unit && <span className="text-[0.8em] text-muted-foreground ms-1">{t('د.ك', 'KWD')}</span>}
+      {unit && <span className="text-[0.62em] font-medium text-muted-foreground ms-1.5">{t('د.ك', 'KWD')}</span>}
     </span>
   );
 }
@@ -195,7 +228,7 @@ export function PageSkeleton() {
     <div className="space-y-5">
       <Skeleton className="h-10 w-56 bg-muted" />
       <Skeleton className="h-5 w-80 max-w-full bg-muted" />
-      <Skeleton className="h-44 bg-muted" />
+      <Skeleton className="h-52 bg-muted" />
       <Skeleton className="h-64 bg-muted" />
     </div>
   );
@@ -216,7 +249,7 @@ export function ErrorPanel({ onRetry, msg }: { onRetry: () => void; msg?: string
 export function ReadOnlyNote() {
   const { t } = useLang();
   return (
-    <span className="inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm text-muted-foreground" data-testid="status-readonly">
+    <span className="inline-flex min-h-11 items-center rounded-lg bg-muted px-4 text-sm text-muted-foreground" data-testid="status-readonly">
       {t('عرض فقط، التعديل للمدير المالي', 'View only. Edits are for the finance manager')}
     </span>
   );
@@ -227,14 +260,14 @@ export function ErrorBox({ msg, exceeded, op }: { msg: string; exceeded?: number
   const { t } = useLang();
   if (exceeded === undefined) {
     return (
-      <div className="rounded-lg border border-destructive/40 bg-destructive/[.05] p-4" data-testid="text-api-error" role="alert">
+      <div className="rounded-lg border border-destructive/30 bg-destructive/[.05] p-4" data-testid="text-api-error" role="alert">
         <div className="font-semibold text-destructive mb-1">{t('ما تم الحفظ', 'Not saved')}</div>
         <div>{msg}</div>
       </div>
     );
   }
   return (
-    <div className="rounded-lg border border-destructive/40 bg-destructive/[.05] p-4 space-y-2" data-testid="text-api-error" role="alert">
+    <div className="rounded-lg border border-destructive/30 bg-destructive/[.05] p-4 space-y-2" data-testid="text-api-error" role="alert">
       <div className="font-semibold text-destructive">{op ? t(`انرفض ${op} لأنه يتجاوز السقف`, `${op} rejected: over the cap`) : t('انرفض لأنه يتجاوز السقف', 'Rejected: over the cap')}</div>
       <div>{t('تكلفة هالعملية أكبر من المتاح في البند.', 'This would cost more than the available category budget.')}</div>
       <div>{t('الزيادة فوق السقف: ', 'Over the cap by: ')}<Money v={exceeded} exact className="font-semibold text-destructive" /></div>
