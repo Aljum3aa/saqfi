@@ -1,0 +1,76 @@
+import { type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { Toaster } from '@/components/ui/toaster';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import NotFound from '@/pages/not-found';
+import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { useGetSession, getGetSessionQueryKey, type Session } from '@workspace/api-client-react';
+import { LangProvider } from '@/lib/i18n';
+import { Shell, Mark } from '@/components/shell';
+import Login from '@/pages/login';
+import Dashboard from '@/pages/dashboard';
+import Budget from '@/pages/budget';
+import Contracts from '@/pages/contracts';
+import Payroll from '@/pages/payroll';
+import Transactions from '@/pages/transactions';
+import PlayerHome from '@/pages/player';
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
+
+function Gate() {
+  const q = useGetSession({ query: { queryKey: getGetSessionQueryKey(), retry: false, refetchInterval: 60000 } });
+  if (q.isLoading) {
+    return <div className="min-h-[100dvh] grid place-items-center"><div className="animate-pulse"><Mark size={48} /></div></div>;
+  }
+  const session = q.data;
+  if (!session || !session.authenticated) return <Login />;
+  return <Shell session={session}><Router session={session} /></Shell>;
+}
+
+function Router({ session }: { session: Session }) {
+  if (session.role === 'player') {
+    return (
+      <RoutedErrorBoundary>
+        <Switch>
+          <Route>{() => <PlayerHome session={session} />}</Route>
+        </Switch>
+      </RoutedErrorBoundary>
+    );
+  }
+  return (
+    <RoutedErrorBoundary>
+      <Switch>
+        <Route path="/">{() => <Dashboard session={session} />}</Route>
+        <Route path="/dashboard">{() => <Dashboard session={session} />}</Route>
+        <Route path="/budget">{() => <Budget session={session} />}</Route>
+        <Route path="/contracts">{() => <Contracts session={session} />}</Route>
+        <Route path="/payroll">{() => <Payroll session={session} />}</Route>
+        <Route path="/transactions">{() => <Transactions session={session} />}</Route>
+        <Route component={NotFound} />
+      </Switch>
+    </RoutedErrorBoundary>
+  );
+}
+
+function RoutedErrorBoundary({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LangProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <Gate />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </LangProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

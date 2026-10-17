@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "سقفي | Saqfi"
+description = "Arabic-first financial management for Kuwaiti football clubs, with hard season and category caps, contracts, payroll and role-based dashboards."
+version = "1.0.0"
+id = "artifacts/saqfi"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21438
+
+[services.development]
+run = "pnpm --filter @workspace/saqfi run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/saqfi", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/saqfi/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21438"
+BASE_PATH = "/"

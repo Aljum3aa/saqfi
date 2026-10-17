@@ -1,45 +1,117 @@
-# [Project name]
+# سقفي | Saqfi
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+**ولا دينار فوق السقف — Not one dinar over the cap.**
 
-## Run & Operate
+## Problem, users, solution
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+Kuwaiti football clubs, especially First Division clubs and academies with limited
+budgets, struggle with late salaries and overruns when finances live in Excel or
+notebooks. Saqfi gives finance managers and club presidents a hard season budget,
+category caps, payroll and a record of every dinar. Players follow their own pay.
+This is a coded course FinTech MVP, not a banking or money-transfer service.
 
-## Stack
+## MVP and delivery order
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+Build one feature fully before the next. Work in small, functioning increments.
+Do not add anything outside this list:
 
-## Where things live
+1. Phase one: three demo roles (finance manager, president, player), season budget
+   and category caps, player contracts, monthly payroll, hard-cap rejection, and
+   dashboard (category spending, remaining funds, forecast, 80% and late-pay alerts).
+2. AI financial assistant: conversational budget suggestions and questions about
+   actual club numbers. Advice only; never spend, sign or directly mutate finances.
+3. Manager win/draw bonus rules, match-result bonuses, lateness/cards/absence fines,
+   applied automatically to the appropriate monthly salary.
+4. Player wallet: salary, bonuses, fines and net monthly pay.
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+Only phase one is implemented at present. Bonus/fine fields are zero in phase-one
+payroll, not simulated as implemented features. Players currently have a restricted
+own-contract/history view, not the later full wallet.
 
-## Architecture decisions
+## Vision — NOT in the current MVP
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+Transfer-fee installments, sponsor/ticket income, multi-step approvals, sports
+authority reporting, and direct bank salary payouts. Do not implement these now.
+No payments are required. Any future payment experiments must use Stripe test mode.
 
-## Product
+## Stack and layout
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- MERN: React + Vite + TypeScript, Node.js + Express, MongoDB Atlas + Mongoose.
+- `artifacts/saqfi/`: client application (the client folder in this workspace).
+- `artifacts/api-server/src/saqfi/`: server domain layer, routes, Mongoose schemas,
+  financial calculations and shared seed (the server folder in this workspace).
+- `lib/api-spec/openapi.yaml`: source of truth for API contracts.
+- `lib/api-client-react/`, `lib/api-zod/`: generated client hooks/validation.
+- Existing PostgreSQL scaffold is unused; do not replace MongoDB with it.
+- Arabic RTL first; English toggle; navy/gold fintech design; KWD to 3 decimals.
+- No emojis or decorative icons before labels. Functional icons only.
+- Vercel is the intended eventual deployment target; deployment configuration is
+  a later step, not a claim that this development build is deployed there.
 
-## User preferences
+## Data modes
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Without `MONGODB_URI`: explicit in-memory demo store, seeded on each server
+  restart. Edits are temporary, shared between demo sessions, and reset on restart.
+- With `MONGODB_URI`: MongoDB Atlas through Mongoose. Restart the API after adding
+  the secret. The exact same seed is inserted ONLY when the collection is empty.
+  No memory edits are migrated; an existing database is never overwritten.
+- A configured but unreachable/invalid MongoDB connection FAILS EXPLICITLY; never
+  silently fall back to memory and make users think financial data was saved.
+- Admin UI displays `بيانات تجريبية` or `قاعدة البيانات`.
+- The fictional First Division demo club is نادي الساحل الجديد / New Sahel FC.
+  All 20 player identities and financial records are synthetic.
+- Demo season: July 2026–June 2027, KWD 400,000, July–September payroll history.
+  Travel is at 92% so warnings and cap rejection can be demonstrated.
+- Seed does not add bonuses/fines until the corresponding phase is built.
 
-## Gotchas
+## Authentication and safety
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Current login is EXPLICIT public sandbox role entry, not production
+  authentication. Each role button issues a random opaque, HttpOnly, SameSite
+  session cookie; sessions expire after 8 hours and reset with the API process.
+- Three demo identities: manager (المدير المالي), president (رئيس النادي),
+  player (أحمد العتيبي). No passwords, real users or secret credentials are seeded.
+- Server enforces manager-only mutations; president is read-only; player receives
+  only their own contract and payroll lines, never the club budget or other pay.
+- Do not enter real club finances into this public demo, even in MongoDB mode.
+  Real authentication via Clerk and owner-controlled role provisioning is required
+  before any real-data/public production use.
+- Secrets belong in Replit Secrets / untracked `.env`, NEVER code, logs, git or
+  browser bundles. Never print MongoDB URI or AI keys.
+- Phase two should prefer Replit AI integration when available; otherwise use
+  server-only `OPENAI_API_KEY`, with a graceful unavailable message when missing.
 
-## Pointers
+## Financial rules
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Integer fils for all arithmetic; API amounts are KWD, max three decimals.
+- Contracts reserve ALL unpaid inclusive calendar months through season end.
+  Partial calendar months count as full salary months in this MVP; explain in UI.
+- Contract start/end must be within season. No adding contracts retroactively
+  into an already completed payroll month.
+- Available funds = cap − actual spending − unpaid contractual commitments.
+  New contracts, expenses, and allocation reductions must all pass this invariant.
+- Payroll converts reserved obligations into spending atomically, and records
+  one ledger transaction and all player lines. Duplicate monthly runs rejected.
+- Run oldest unpaid eligible month first, never a future month. Payroll is
+  accounting-only; no bank or Stripe transfer is made.
+- MongoDB stores the season as a Mongoose aggregate with validated subdocuments.
+  Revision compare-and-swap prevents concurrent cap overspend, duplicate payroll,
+  and partial ledger/contract changes across server processes. In-memory mode
+  uses the same revision and financial validation.
+- Forecast = actual spend / elapsed calendar months (including current month)
+  × season months. This is an indicative burn-rate extrapolation, not a promise.
+- A previous month with eligible unpaid players generates a late salary alert.
+- No edit/delete of paid contracts or ledger entries in phase one; these were not
+  requested and would need an explicit reversal/audit policy.
+
+## Run and operate
+
+- Client workflow: `artifacts/saqfi: web`.
+- API workflow: `artifacts/api-server: API Server`.
+- `pnpm --filter @workspace/api-spec run codegen` after EVERY spec change.
+- `pnpm run typecheck` for the complete workspace.
+- `pnpm --filter @workspace/api-server run build` for backend bundle.
+- API base: `/api/saqfi`; same-origin cookies, no hardcoded hosts.
+- Key endpoints: `/session` GET/POST/DELETE, `/state` GET, `/budget` PUT,
+  `/contracts` POST, `/expenses` POST, `/payroll` POST.
+- Artifacts have managed workflows; do not create duplicate servers.
