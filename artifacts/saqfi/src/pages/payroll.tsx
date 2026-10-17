@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Banknote } from 'lucide-react';
+import { ChevronDown, Banknote, CheckCircle2 } from 'lucide-react';
 import { useRunPayroll, getGetClubStateQueryKey, type Session } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
-import { apiErr, kwd, kwdText, monthLabel, ym, dateLabel, type ApiErr } from '@/lib/saqfi';
-import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, ErrorBox, KV } from '@/components/shell';
+import { apiErr, kwdText, monthLabel, ym, dateLabel, type ApiErr } from '@/lib/saqfi';
+import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, ErrorBox } from '@/components/shell';
+import { Avatar, Chip, SectionTitle } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -36,35 +37,66 @@ export default function Payroll({ session }: { session: Session }) {
   const history = [...s.payrolls].sort((a, b) => b.month.localeCompare(a.month));
   const notYet = !!month && month > s.today.slice(0, 7);
   const name = (id: string, fallback: string) => s.contracts.find((c) => c.id === id)?.[lang === 'ar' ? 'name' : 'nameEn'] ?? fallback;
+  const canRun = !!month && !run.isPending && due.length > 0 && !notYet;
+  const RunBtn = ({ big = false }: { big?: boolean }) => (
+    <Button disabled={!canRun} data-testid={big ? 'button-run-payroll' : 'button-run-payroll-head'} onClick={() => { setErr(null); setConfirm(true); }}
+      className={cn('rounded-full px-6', big ? 'h-12 bg-white text-primary hover:bg-white/90 font-semibold' : 'h-12')}>
+      <Banknote className="h-4 w-4" />{t('صرف رواتب الشهر', 'Pay this month\'s salaries')}
+    </Button>
+  );
 
   return (
     <div>
       <PageHead title={t('الرواتب', 'Payroll')}
         sub={t('صرف الرواتب هني قيد محاسبي بس، ما في تحويل بنكي. كل شهر ينصرف مرة وحدة.', 'Paying salaries here is an accounting entry only, no bank transfer. Each month is paid once.')}
-        action={isManager ? (month ? (
-          <Button disabled={run.isPending || due.length === 0 || notYet} data-testid="button-run-payroll" onClick={() => { setErr(null); setConfirm(true); }}>
-            <Banknote className="h-4 w-4" />{t('صرف رواتب الشهر', 'Pay this month\'s salaries')}
-          </Button>) : undefined) : <ReadOnlyNote />} />
+        action={isManager ? undefined : <ReadOnlyNote />} />
 
       {err && <div className="mb-6"><ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('صرف الرواتب', 'Payroll')} /></div>}
 
-      <section className="panel p-5 md:p-8 mb-6">
-        <div className="text-muted-foreground">{t('الشهر الجاي', 'Next month due')}</div>
-        <div className="text-[26px] font-semibold" data-testid="text-payroll-month">{month ? monthLabel(month, lang) : t('خلصت رواتب الموسم', 'All season salaries paid')}</div>
-        {month && <div className="mt-1">{t(`${due.length} لاعب، المجموع `, `${due.length} players, total `)}<Money v={dueTotal} exact className="font-semibold" /></div>}
-        {notYet && <p className="mt-2 text-muted-foreground">{t('ما يمديك تصرف هالشهر قبل لا يبدأ.', 'You can\'t pay this month before it starts.')}</p>}
+      {/* Next run: the page's one bold card */}
+      <section className="relative overflow-hidden rounded-[24px] p-6 md:p-8 mb-6 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#24467d_0%,#14284B_48%,#0c1a33_100%)]">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div>
+            <div className="text-white/70">{t('الشهر الجاي', 'Next month due')}</div>
+            <div className="font-display text-[30px] md:text-[38px] font-semibold leading-tight" data-testid="text-payroll-month">{month ? monthLabel(month, lang) : t('خلصت رواتب الموسم', 'All season salaries paid')}</div>
+            {month && (
+              <div className="mt-2 text-white/80">
+                {t(`${due.length} لاعب، المجموع `, `${due.length} players, total `)}
+                <Money v={dueTotal} exact className="font-semibold text-white [&_.text-muted-foreground]:text-white/60" />
+              </div>
+            )}
+            {notYet && <p className="mt-2 text-white/70">{t('ما يمديك تصرف هالشهر قبل لا يبدأ.', 'You can\'t pay this month before it starts.')}</p>}
+          </div>
+          {isManager && month && <RunBtn big />}
+        </div>
         {month && due.length > 0 && (
-          <ul className="mt-5 divide-y divide-border border-t border-border">
-            {due.map((c) => (
-              <li key={c.id} className="flex justify-between gap-3 py-3"><span>{lang === 'ar' ? c.name : c.nameEn}</span><Money v={c.salary} exact /></li>
-            ))}
-          </ul>
+          <div className="mt-6 flex items-center">
+            <div className="flex -space-x-2 rtl:space-x-reverse">
+              {due.slice(0, 8).map((c) => <Avatar key={c.id} name={c.nameEn || c.name} size={36} className="ring-2 ring-[#14284B]" />)}
+            </div>
+            {due.length > 8 && <span className="ms-3 text-[13px] text-white/70">+{due.length - 8}</span>}
+          </div>
         )}
-        {month && due.length === 0 && <p className="mt-3 text-muted-foreground">{t('ما في لاعبين عقودهم تغطي هالشهر. أضف عقد من صفحة اللاعبين والعقود.', 'No contracts cover this month. Add one on the Players & contracts page.')}</p>}
+        {month && due.length === 0 && <p className="mt-3 text-white/70">{t('ما في لاعبين عقودهم تغطي هالشهر. أضف عقد من صفحة اللاعبين والعقود.', 'No contracts cover this month. Add one on the Players & contracts page.')}</p>}
       </section>
 
+      {month && due.length > 0 && (
+        <section className="panel p-5 md:p-7 mb-6">
+          <SectionTitle aside={t(`${due.length} لاعب`, `${due.length} players`)}>{t('اللي بينصرف لهم', 'Who gets paid')}</SectionTitle>
+          <ul className="grid sm:grid-cols-2 gap-x-8 divide-y divide-border sm:divide-y-0">
+            {due.map((c) => (
+              <li key={c.id} className="flex items-center gap-3 py-3 sm:border-b sm:border-border">
+                <Avatar name={c.nameEn || c.name} size={36} />
+                <span className="flex-1 truncate">{lang === 'ar' ? c.name : c.nameEn}</span>
+                <Money v={c.salary} exact className="font-display font-semibold" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section>
-        <h2 className="text-xl font-semibold mb-4">{t('الرواتب اللي انصرفت', 'Paid salaries')}</h2>
+        <SectionTitle>{t('الرواتب اللي انصرفت', 'Paid salaries')}</SectionTitle>
         {history.length === 0 ? (
           <div className="panel p-8 text-center text-muted-foreground">{t('ما انصرفت رواتب للحين. أول ما تصرف رواتب الشهر بتطلع هني.', 'No salaries paid yet. They will show here after the first payroll.')}</div>
         ) : (
@@ -73,42 +105,28 @@ export default function Payroll({ session }: { session: Session }) {
               const isOpen = openRun === p.id;
               return (
                 <div key={p.id} className="panel overflow-hidden" data-testid={`card-payroll-${p.month}`}>
-                  <button className="w-full min-h-16 flex items-center gap-3 p-4 text-start hover:bg-background" aria-expanded={isOpen}
+                  <button className="w-full min-h-[72px] flex items-center gap-4 px-5 py-4 text-start hover:bg-muted/40 transition-colors" aria-expanded={isOpen}
                     onClick={() => setOpenRun(isOpen ? null : p.id)} data-testid={`button-toggle-payroll-${p.month}`}>
-                    <div className="flex-1">
+                    <span className="h-10 w-10 rounded-full bg-success/10 text-success grid place-items-center shrink-0"><CheckCircle2 className="h-5 w-5" /></span>
+                    <div className="flex-1 min-w-0">
                       <div className="font-semibold">{monthLabel(p.month, lang)}</div>
-                      <div className="text-[15px] text-muted-foreground">{t('انصرف ', 'Paid ')}{dateLabel(p.paidAt, lang)} · {p.lines.length} {t('لاعب', 'players')}</div>
+                      <div className="text-[13px] text-muted-foreground">{t('انصرف ', 'Paid ')}{dateLabel(p.paidAt, lang)}، {p.lines.length} {t('لاعب', 'players')}</div>
                     </div>
-                    <Money v={p.total} exact className="font-semibold" />
+                    <Money v={p.total} exact className="font-display font-semibold text-[17px]" />
                     <ChevronDown className={cn('h-5 w-5 text-muted-foreground transition-transform', isOpen && 'rotate-180')} />
                   </button>
                   {isOpen && (
-                    <div className="border-t border-border">
-                      <table className="w-full hidden md:table">
-                        <thead className="text-[15px] text-muted-foreground bg-background"><tr>
-                          <th className="text-start font-semibold p-3 ps-4">{t('اللاعب', 'Player')}</th><th className="text-end font-semibold p-3">{t('الراتب', 'Salary')}</th>
-                          <th className="text-end font-semibold p-3">{t('مكافأة', 'Bonus')}</th><th className="text-end font-semibold p-3">{t('غرامة', 'Fine')}</th><th className="text-end font-semibold p-3 pe-4">{t('الصافي', 'Net')}</th>
-                        </tr></thead>
-                        <tbody>{p.lines.map((l) => (
-                          <tr key={l.playerId} className="border-t border-border">
-                            <td className="p-3 ps-4">{name(l.playerId, l.name)}</td>
-                            <td className="p-3 text-end num">{kwd(l.salary)}</td><td className="p-3 text-end num">{kwd(l.bonus)}</td>
-                            <td className="p-3 text-end num">{kwd(l.fine)}</td><td className="p-3 pe-4 text-end num font-semibold">{kwd(l.net)}</td>
-                          </tr>
-                        ))}</tbody>
-                      </table>
-                      <div className="md:hidden divide-y divide-border">
-                        {p.lines.map((l) => (
-                          <div key={l.playerId} className="p-4" data-testid={`card-payroll-line-${p.month}-${l.playerId}`}>
-                            <div className="font-semibold mb-1">{name(l.playerId, l.name)}</div>
-                            <KV k={t('الراتب', 'Salary')} v={<Money v={l.salary} exact />} />
-                            <KV k={t('مكافأة', 'Bonus')} v={<Money v={l.bonus} exact />} />
-                            <KV k={t('غرامة', 'Fine')} v={<Money v={l.fine} exact />} />
-                            <KV k={t('الصافي', 'Net')} strong v={<Money v={l.net} exact />} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <ul className="border-t border-border divide-y divide-border">
+                      {p.lines.map((l) => (
+                        <li key={l.playerId} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1" data-testid={`card-payroll-line-${p.month}-${l.playerId}`}>
+                          <span className="flex items-center gap-3 flex-1 min-w-[180px]"><Avatar name={name(l.playerId, l.name)} size={32} /><span className="truncate">{name(l.playerId, l.name)}</span></span>
+                          <span className="text-[13px] text-muted-foreground">{t('الراتب ', 'Salary ')}<Money v={l.salary} exact /></span>
+                          {l.bonus > 0 && <Chip tone="good">+<Money v={l.bonus} exact unit={false} />&nbsp;{t('مكافأة', 'bonus')}</Chip>}
+                          {l.fine > 0 && <Chip tone="bad">-<Money v={l.fine} exact unit={false} />&nbsp;{t('غرامة', 'fine')}</Chip>}
+                          <Money v={l.net} exact className="font-semibold ms-auto" />
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               );
@@ -118,7 +136,7 @@ export default function Payroll({ session }: { session: Session }) {
       </section>
 
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-[20px]">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('صرف رواتب ', 'Pay salaries for ')}{monthLabel(month, lang)}</AlertDialogTitle>
             <AlertDialogDescription className="text-[15px]">
@@ -127,8 +145,8 @@ export default function Payroll({ session }: { session: Session }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>{t('إلغاء', 'Cancel')}</AlertDialogCancel>
-            <AlertDialogAction data-testid="button-confirm-payroll" disabled={run.isPending} onClick={(e) => { e.preventDefault(); run.mutate({ data: { month } }); }}>
+            <AlertDialogCancel className="rounded-full">{t('إلغاء', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction className="rounded-full" data-testid="button-confirm-payroll" disabled={run.isPending} onClick={(e) => { e.preventDefault(); run.mutate({ data: { month } }); }}>
               {run.isPending ? t('جاري الصرف…', 'Paying…') : t('تأكيد الصرف', 'Confirm payment')}
             </AlertDialogAction>
           </AlertDialogFooter>

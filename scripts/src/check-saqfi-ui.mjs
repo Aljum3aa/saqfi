@@ -99,6 +99,26 @@ try {
             expect(before.nextPayrollMonth > before.today.slice(0, 7)).toBe(true);
             await expect(runButton).toBeDisabled();
             await check(page, `payroll-future-month-${width}-${lang}`);
+            // Preview the due-month confirmation using a browser-only GET response.
+            // Do not change server dates, disable auth, or submit any payroll.
+            const dueMonthState = async route => {
+              const response = await route.fetch();
+              const state = await response.json();
+              await route.fulfill({ response, json: { ...state, today: `${state.nextPayrollMonth}-01` } });
+            };
+            await page.route('**/api/saqfi/state', dueMonthState);
+            try {
+              await ready(page, '/payroll');
+              await expect(runButton).toBeEnabled();
+              await runButton.click();
+              await expect(page.getByRole('alertdialog')).toBeVisible();
+              await expect(page.getByTestId('button-confirm-payroll')).toBeEnabled();
+              await check(page, `payroll-confirm-${width}-${lang}`);
+              await page.getByRole('alertdialog').getByRole('button', { name: lang === 'ar' ? 'إلغاء' : 'Cancel', exact: true }).click();
+            } finally {
+              await page.unroute('**/api/saqfi/state', dueMonthState);
+            }
+            await ready(page, '/payroll');
           }
         }
         if (route === 'transactions') {
@@ -107,11 +127,15 @@ try {
           await expect(page.getByText(september, { exact: true }).filter({ visible: true })).toBeVisible();
           await expect(page.getByText(staff, { exact: true }).filter({ visible: true })).toBeVisible();
           if (width === 375) {
-            await expect(page.locator('table')).toBeHidden();
-            const card = page.locator('[data-testid^="card-tx-"]').first();
-            await expect(card).toBeVisible();
-            for (const label of lang === 'ar' ? ['التاريخ', 'البند', 'المبلغ'] : ['Date', 'Category', 'Amount'])
-              await expect(card.getByText(label, { exact: true })).toBeVisible();
+            await expect(page.locator('table')).toHaveCount(0);
+            const row = page.locator('[data-testid^="row-tx-"]').first();
+            await expect(row).toBeVisible();
+            await expect(row.locator('.num').first()).toBeVisible();
+            await expect(row.locator('.num').last()).toBeVisible();
+            await expect(row.locator('svg')).toBeVisible();
+            const latest = [...before.transactions].sort((a, b) => b.date.localeCompare(a.date))[0];
+            const category = before.categories.find(c => c.id === latest.categoryId);
+            await expect(row.getByText(lang === 'ar' ? category.name : category.nameEn, { exact: true })).toBeVisible();
           }
         }
       }
