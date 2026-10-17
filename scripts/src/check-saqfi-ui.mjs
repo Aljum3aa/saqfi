@@ -80,7 +80,7 @@ try {
       await expect(page.getByTestId('button-login-manager')).toBeVisible();
       await check(page, `login-${width}-${lang}`);
       await page.getByTestId('button-login-manager').click();
-      await expect(page.getByTestId('text-kpi-budget')).toBeVisible();
+      await expect(page.getByTestId('card-summary')).toBeVisible();
       const before = await (await page.request.get('/api/saqfi/state')).json();
       for (const route of ['dashboard', 'budget', 'contracts', 'payroll', 'transactions']) {
         await ready(page, `/${route}`);
@@ -89,10 +89,17 @@ try {
         if (route === 'payroll') {
           await page.locator('[data-testid^="button-toggle-payroll-"]').first().click();
           await check(page, `payroll-expanded-${width}-${lang}`);
-          await page.getByTestId('button-run-payroll').click();
-          await expect(page.getByRole('alertdialog')).toBeVisible();
-          await check(page, `payroll-confirm-${width}-${lang}`);
-          await page.keyboard.press('Escape');
+          const runButton = page.getByTestId('button-run-payroll');
+          if (await runButton.isEnabled()) {
+            await runButton.click();
+            await expect(page.getByRole('alertdialog')).toBeVisible();
+            await check(page, `payroll-confirm-${width}-${lang}`);
+            await page.keyboard.press('Escape');
+          } else {
+            expect(before.nextPayrollMonth > before.today.slice(0, 7)).toBe(true);
+            await expect(runButton).toBeDisabled();
+            await check(page, `payroll-future-month-${width}-${lang}`);
+          }
         }
         if (route === 'transactions') {
           const september = lang === 'ar' ? 'رواتب اللاعبين، سبتمبر 2026' : 'Player salaries, September 2026';
@@ -123,7 +130,12 @@ try {
       await page.getByTestId('input-name').fill('لاعب فحص السقف');
       await page.getByTestId('input-name-en').fill('Cap Check Player');
       await page.getByTestId('input-salary').fill('10000');
+      await page.getByTestId('input-start').fill(`${before.nextPayrollMonth}-01`);
+      const contractResponse = page.waitForResponse(r => r.url().endsWith('/api/saqfi/contracts') && r.request().method() === 'POST');
       await page.getByTestId('button-submit-contract').click();
+      const rejection = await contractResponse;
+      expect(rejection.status()).toBe(409);
+      expect((await rejection.json()).exceeded).toBeGreaterThan(0);
       await expect(page.getByTestId('text-api-error')).toBeVisible();
       await check(page, `contract-rejected-${width}-${lang}`);
       await page.keyboard.press('Escape');
@@ -148,7 +160,7 @@ try {
       await page.getByTestId(width === 375 ? 'button-logout-mobile' : 'button-logout').click();
       await expect(page.getByTestId('button-login-president')).toBeVisible();
       await page.getByTestId('button-login-president').click();
-      await expect(page.getByTestId('text-kpi-budget')).toBeVisible();
+      await expect(page.getByTestId('card-summary')).toBeVisible();
       for (const [route, button] of [
         ['budget', 'button-edit-budget'], ['contracts', 'button-new-contract'],
         ['payroll', 'button-run-payroll'], ['transactions', 'button-new-expense'],

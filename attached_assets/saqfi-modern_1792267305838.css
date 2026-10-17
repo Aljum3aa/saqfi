@@ -1,0 +1,24 @@
+/* سقفي v3 — modern layer. Apply in artifacts/saqfi/src/index.css:
+   1) Google Fonts import: load BOTH families
+      https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@400;500;600;700&display=swap
+   2) Inside @theme inline add:  --font-display: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif;
+      (keep --color-cap and --color-track that already exist)
+   3) In :root (and .dark) change:  --background: 220 22% 96%;  --radius: 16px;
+   4) Replace the existing .panel rule at the bottom with the rules below (append them at the end of the file). */
+
+.panel{
+  background:hsl(var(--card));
+  border:1px solid hsl(220 20% 93%);
+  border-radius:20px;
+  box-shadow:0 1px 2px hsl(218 40% 20% / .04), 0 8px 24px hsl(218 40% 20% / .05);
+}
+.font-display{font-family:var(--font-display, 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif)}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+
+/* Buttons across the app: pill primary actions, calm focus ring */
+button, a{ -webkit-tap-highlight-color: transparent }
+:focus-visible{ outline:2px solid hsl(var(--ring)); outline-offset:2px }
+
+@media (prefers-reduced-motion: reduce){
+  *{ transition-duration:0ms !important; animation-duration:0ms !important }
+}

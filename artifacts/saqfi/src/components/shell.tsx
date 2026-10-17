@@ -14,14 +14,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from '@/hooks/use-toast';
 
 /** The Saqfi mark: a gold cap line with three budget bars under it, none crossing it (Gemini concept, redrawn as vector). */
-export function Mark({ size = 34, tile = true }: { size?: number; tile?: boolean }) {
+export function Mark({ size = 34, tile = true, onDark = false }: { size?: number; tile?: boolean; onDark?: boolean }) {
+  const bar = tile || onDark ? '#FFFFFF' : '#14284B';
   return (
     <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden>
-      {tile && <rect width="1024" height="1024" rx="232" fill="#14284B" />}
+      {tile && !onDark && <rect width="1024" height="1024" rx="232" fill="#14284B" />}
+      {onDark && <rect width="1024" height="1024" rx="232" fill="#FFFFFF" fillOpacity="0.08" />}
       <rect x="256" y="256" width="512" height="54" rx="10" fill="#C9A24A" />
-      <rect x="299" y="488" width="113" height="280" rx="10" fill={tile ? '#FFFFFF' : '#14284B'} />
-      <rect x="455" y="350" width="113" height="418" rx="10" fill={tile ? '#FFFFFF' : '#14284B'} />
-      <rect x="612" y="442" width="113" height="326" rx="10" fill={tile ? '#FFFFFF' : '#14284B'} />
+      <rect x="299" y="488" width="113" height="280" rx="10" fill={bar} />
+      <rect x="455" y="350" width="113" height="418" rx="10" fill={bar} />
+      <rect x="612" y="442" width="113" height="326" rx="10" fill={bar} />
     </svg>
   );
 }
@@ -76,14 +78,14 @@ function AdvisorDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   );
 }
 
-function Brand({ s, mobile = false }: { s?: ClubState; mobile?: boolean }) {
+function Brand({ s, dark = false }: { s?: ClubState; dark?: boolean }) {
   const { t } = useLang();
   return (
-    <Link href="/dashboard" className={cn('flex items-center gap-3 min-h-11', mobile && 'max-lg:min-w-0 max-lg:[&>svg]:shrink-0')} data-testid="link-home">
-      <Mark size={36} />
-      <div className={cn('leading-tight', mobile && 'max-lg:min-w-0')}>
-        <div className="font-bold text-[18px]">{t('سقفي', 'Saqfi')}</div>
-        <div className={cn('text-[13px] text-muted-foreground', mobile && 'hidden min-[360px]:block max-lg:truncate')}>{s ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
+    <Link href="/dashboard" className="flex items-center gap-3 min-h-11" data-testid="link-home">
+      <Mark size={36} onDark={dark} />
+      <div className="leading-tight min-w-0">
+        <div className="font-display font-semibold text-[19px]">{t('سقفي', 'Saqfi')}</div>
+        <div className={cn('text-[13px] truncate max-[359px]:hidden', dark ? 'text-white/60' : 'text-muted-foreground')}>{s ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
       </div>
     </Link>
   );
@@ -116,16 +118,16 @@ export function Shell({ session, children }: { session: Session; children: React
     <div className="min-h-[100dvh] lg:flex">
       {/* Desktop: fixed side menu on the start side (right in Arabic) */}
       {!isPlayer && (
-        <aside className="hidden lg:flex lg:flex-col w-[264px] shrink-0 sticky top-0 h-[100dvh] border-e border-border bg-card px-4 py-5">
-          <div className="px-2"><Brand s={s} /></div>
+        <aside className="hidden lg:flex lg:flex-col w-[268px] shrink-0 sticky top-0 h-[100dvh] bg-[#0f1f3d] text-white px-4 py-6">
+          <div className="px-2"><Brand s={s} dark /></div>
           <nav className="mt-8 flex flex-col gap-1" aria-label={t('الأقسام', 'Sections')}>
             {NAV.map((n) => {
               const Icon = n.icon;
               const on = active(n.href);
               return (
                 <Link key={n.href} href={n.href} data-testid={`link-nav-${n.href.slice(1)}`} aria-current={on ? 'page' : undefined}
-                  className={cn('min-h-11 flex items-center gap-3 px-3 rounded-lg text-[15px] transition-colors',
-                    on ? 'bg-primary text-primary-foreground font-semibold' : 'text-foreground/80 hover:bg-muted')}>
+                  className={cn('min-h-11 flex items-center gap-3 px-4 rounded-full text-[15px] transition-colors',
+                    on ? 'bg-white text-[#0f1f3d] font-semibold shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white')}>
                   <Icon className="h-[18px] w-[18px]" />
                   {t(n.ar, n.en)}
                 </Link>
@@ -133,16 +135,16 @@ export function Shell({ session, children }: { session: Session; children: React
             })}
           </nav>
           <button onClick={() => setAdvisor(true)} data-testid="button-advisor"
-            className="mt-4 min-h-11 flex items-center gap-3 px-3 rounded-lg border border-border text-[15px] hover:bg-muted">
+            className="mt-5 min-h-11 flex items-center gap-3 px-4 rounded-full border border-white/15 text-[15px] text-white/85 hover:bg-white/10">
             <MessageCircleQuestion className="h-[18px] w-[18px]" />
             {t('اسأل المستشار', 'Ask the advisor')}
           </button>
-          <div className="mt-auto border-t border-border pt-4 px-1">
+          <div className="mt-auto rounded-2xl bg-white/[.06] p-4">
             <div className="text-[15px] font-semibold" data-testid="text-session-role">{roleLabel(session.role, t)}</div>
-            {modeText && <div className="text-[13px] text-muted-foreground" data-testid="status-mode">{modeText}</div>}
+            {modeText && <div className="text-[13px] text-white/60" data-testid="status-mode">{modeText}</div>}
             <div className="mt-3 flex items-center justify-between gap-2">
-              <LangToggle className="px-2" />
-              <Button size="sm" variant="ghost" data-testid="button-logout" disabled={logout.isPending} onClick={() => logout.mutate()}>
+              <LangToggle className="px-2 text-white/80 hover:bg-white/10" />
+              <Button size="sm" variant="ghost" className="text-white/80 hover:bg-white/10 hover:text-white" data-testid="button-logout" disabled={logout.isPending} onClick={() => logout.mutate()}>
                 <LogOut className="h-4 w-4 rtl:rotate-180" />{t('خروج', 'Sign out')}
               </Button>
             </div>
@@ -154,7 +156,7 @@ export function Shell({ session, children }: { session: Session; children: React
         {/* Top bar: always on mobile, and for the player view on desktop */}
         <header className={cn('sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur', !isPlayer && 'lg:hidden')}>
           <div className="mx-auto max-w-[1100px] px-4 md:px-6 h-16 flex items-center gap-2">
-            <Brand s={s} mobile />
+            <Brand s={s} />
             <div className="ms-auto flex items-center gap-1">
               {!isPlayer && (
                 <button onClick={() => setAdvisor(true)} data-testid="button-advisor-mobile" aria-label={t('المستشار', 'Advisor')}
@@ -186,7 +188,7 @@ export function Shell({ session, children }: { session: Session; children: React
               const on = active(n.href);
               return (
                 <Link key={n.href} href={n.href} data-testid={`link-tab-${n.href.slice(1)}`} aria-current={on ? 'page' : undefined}
-                  className={cn('flex flex-col items-center justify-center gap-1 min-h-[62px] px-1 text-[12px] leading-tight', on ? 'text-primary font-semibold' : 'text-muted-foreground')}>
+                  className={cn('flex flex-col items-center justify-center gap-1 min-h-[64px] px-1 text-[12px] leading-tight', on ? 'text-primary font-semibold' : 'text-muted-foreground')}>
                   <span className={cn('inline-flex h-7 w-12 items-center justify-center rounded-full', on && 'bg-accent')}><Icon className="h-5 w-5" /></span>
                   <span className="text-center">{t(n.sar, n.sen)}</span>
                 </Link>
@@ -204,7 +206,7 @@ export function PageHead({ title, sub, action }: { title: string; sub?: string; 
   return (
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
       <div>
-        <h1 className="text-[28px] md:text-[34px] font-bold leading-tight tracking-tight">{title}</h1>
+        <h1 className="font-display text-[28px] md:text-[36px] font-semibold leading-tight tracking-tight">{title}</h1>
         {sub && <p className="text-muted-foreground mt-1.5 max-w-2xl">{sub}</p>}
       </div>
       {action && <div className="shrink-0 [&>*]:w-full sm:[&>*]:w-auto">{action}</div>}
@@ -217,7 +219,7 @@ export function Money({ v, className, unit = true, exact = false }: { v: number;
   const { t } = useLang();
   return (
     <span className={cn('whitespace-nowrap', className)}>
-      <span className="num">{v < 0 ? '-' : ''}{kwd(Math.abs(v), exact)}</span>
+      <span className="num font-display">{v < 0 ? '-' : ''}{kwd(Math.abs(v), exact)}</span>
       {unit && <span className="text-[0.62em] font-medium text-muted-foreground ms-1.5">{t('د.ك', 'KWD')}</span>}
     </span>
   );

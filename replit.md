@@ -127,10 +127,12 @@ breakages; do not rewrite or visually "improve" the designer's work.
 - Cool-paper background, white cards, deep navy brand/action colour, gold for the
   logo and budget-cap line. Root and dark token values intentionally match.
 - Green means paid/good, amber warning, red over-cap/rejected.
-- One Arabic font: IBM Plex Sans Arabic, weights 400, 500, 600 and 700.
-- Readable 16px body, generous spacing, 12px corners and 44px touch targets.
+- IBM Plex Sans Arabic for body text and Readex Pro for display text, with weights
+  400, 500, 600 and 700.
+- Readable 16px body, generous spacing, 16px theme corners, 20px panel corners and
+  the designer's supplied component shapes.
 - Five sections: الرئيسية، الميزانية، اللاعبين والعقود، الرواتب، المصاريف.
-  Mobile bottom tabs; desktop sidebar. Advisor is a separate button.
+  Mobile bottom tabs; dark desktop sidebar. Advisor is a separate button.
 - The home summary prominently shows genuinely spendable money after salary
   reservations, and distinguishes spent, reserved and the season cap.
 - Plain short Kuwaiti/Gulf Arabic, one page title/short explanation/main action.

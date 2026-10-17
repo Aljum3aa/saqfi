@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Readex+Pro:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -58,6 +58,7 @@
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
   --font-sans: var(--app-font-sans);
+  --font-display: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif;
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
 
@@ -80,7 +81,7 @@
   --elevate-2: rgba(15,27,45,.06);
 
   /* page: cool paper, not cream */
-  --background: 220 20% 97%;          /* #F6F7F9 */
+  --background: 220 22% 96%;          /* #F6F7F9 */
   --foreground: 216 50% 12%;          /* #0F1B2D ink */
   --border: 220 16% 90%;              /* #E3E7EE */
   --card: 0 0% 100%;
@@ -124,7 +125,7 @@
   --app-font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   --app-font-serif: 'IBM Plex Sans Arabic', sans-serif;
   --app-font-mono: 'IBM Plex Sans Arabic', sans-serif;
-  --radius: 12px;
+  --radius: 16px;
   --shadow-2xs: 0 1px 2px hsl(218 40% 20% / .04);
   --shadow-xs: 0 1px 2px hsl(218 40% 20% / .05);
   --shadow-sm: 0 1px 2px hsl(218 40% 20% / .05);
@@ -152,7 +153,7 @@
   --elevate-2: rgba(15,27,45,.06);
 
   /* page: cool paper, not cream */
-  --background: 220 20% 97%;          /* #F6F7F9 */
+  --background: 220 22% 96%;          /* #F6F7F9 */
   --foreground: 216 50% 12%;          /* #0F1B2D ink */
   --border: 220 16% 90%;              /* #E3E7EE */
   --card: 0 0% 100%;
@@ -196,7 +197,7 @@
   --app-font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   --app-font-serif: 'IBM Plex Sans Arabic', sans-serif;
   --app-font-mono: 'IBM Plex Sans Arabic', sans-serif;
-  --radius: 12px;
+  --radius: 16px;
   --shadow-2xs: 0 1px 2px hsl(218 40% 20% / .04);
   --shadow-xs: 0 1px 2px hsl(218 40% 20% / .05);
   --shadow-sm: 0 1px 2px hsl(218 40% 20% / .05);
@@ -342,4 +343,19 @@
 body{font-size:16px;line-height:1.6;min-height:100dvh;font-weight:400}
 
 .num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
-.panel{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;box-shadow:0 1px 3px hsl(220 30% 20% / .06)}
+.panel{
+  background:hsl(var(--card));
+  border:1px solid hsl(220 20% 93%);
+  border-radius:20px;
+  box-shadow:0 1px 2px hsl(218 40% 20% / .04), 0 8px 24px hsl(218 40% 20% / .05);
+}
+.font-display{font-family:var(--font-display, 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif)}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+
+/* Buttons across the app: pill primary actions, calm focus ring */
+button, a{ -webkit-tap-highlight-color: transparent }
+:focus-visible{ outline:2px solid hsl(var(--ring)); outline-offset:2px }
+
+@media (prefers-reduced-motion: reduce){
+  *{ transition-duration:0ms !important; animation-duration:0ms !important }
+}
