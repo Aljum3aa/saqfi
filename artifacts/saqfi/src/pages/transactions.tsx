@@ -3,8 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 import { useCreateExpense, getGetClubStateQueryKey, type Session, type ClubState } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
-import { apiErr, kwd, dateLabel, validAmount, DEC3, type ApiErr } from '@/lib/saqfi';
-import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, ErrorBox } from '@/components/shell';
+import { apiErr, kwd, dateLabel, transactionDescription, validAmount, DEC3, type ApiErr } from '@/lib/saqfi';
+import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, ErrorBox, KV } from '@/components/shell';
 import { Field } from '@/pages/contracts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,65 +22,82 @@ export default function Transactions({ session }: { session: Session }) {
   const list = useMemo(() => {
     const k = term.trim().toLowerCase();
     return [...(q.data?.transactions ?? [])]
-      .filter((x) => (cat === 'all' || x.categoryId === cat) && (!k || x.description.toLowerCase().includes(k)))
+      .filter((x) => (cat === 'all' || x.categoryId === cat) && (!k || transactionDescription(x, lang).toLowerCase().includes(k)))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [q.data, term, cat]);
+  }, [q.data, term, cat, lang]);
   if (q.isLoading) return <PageSkeleton />;
   if (q.isError || !q.data) return <ErrorPanel onRetry={() => q.refetch()} />;
   const s = q.data;
   const isManager = session.role === 'manager';
   const catName = (id: string) => { const c = s.categories.find((x) => x.id === id); return c ? t(c.name, c.nameEn) : id; };
   const sum = list.reduce((a, x) => a + Math.round(x.amount * 1000), 0) / 1000;
-  const typeLabel = (ty: string) => (ty === 'payroll' ? t('رواتب', 'Payroll') : ty === 'expense' ? t('مصروف', 'Expense') : ty);
+  const typeLabel = (ty: string) => (ty === 'payroll' ? t('رواتب', 'Salaries') : ty === 'expense' ? t('مصروف', 'Expense') : ty);
 
   return (
     <div>
-      <PageHead eyebrow={t('السجل المالي', 'Ledger')} title={t('كل دينار مسجل', 'Every dinar, recorded')}
-        sub={t('لا يُقبل مصروف يمس المبالغ المحجوزة لرواتب الأشهر غير المدفوعة.', 'No expense may touch funds reserved for unpaid salary months.')}
-        action={isManager ? <Button className="gap-2" onClick={() => setOpen(true)} data-testid="button-new-expense"><Plus className="h-4 w-4" />{t('مصروف جديد', 'New expense')}</Button> : <ReadOnlyNote />} />
+      <PageHead title={t('المصاريف', 'Expenses')}
+        sub={t('كل دينار انصرف. أي مصروف يمس فلوس الرواتب المحجوزة ينرفض.', 'Every dinar spent. Any expense that touches reserved salary money is rejected.')}
+        action={isManager ? <Button onClick={() => setOpen(true)} data-testid="button-new-expense"><Plus className="h-4 w-4" />{t('تسجيل مصروف', 'Record expense')}</Button> : <ReadOnlyNote />} />
 
-      <div className="panel overflow-hidden rise">
-        <div className="p-3 border-b border-border flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
-            <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder={t('ابحث في الوصف', 'Search descriptions')} className="ps-9" data-testid="input-search-ledger" />
-          </div>
-          <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="sm:w-52" data-testid="select-category-filter"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('كل البنود', 'All categories')}</SelectItem>
-              {s.categories.map((c) => <SelectItem key={c.id} value={c.id}>{t(c.name, c.nameEn)}</SelectItem>)}
-            </SelectContent>
-          </Select>
+      <div className="flex flex-col sm:flex-row gap-3 mb-3">
+        <div className="relative flex-1">
+          <label htmlFor="input-search-ledger" className="sr-only">{t('بحث', 'Search')}</label>
+          <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-muted-foreground" />
+          <Input id="input-search-ledger" value={term} onChange={(e) => setTerm(e.target.value)} placeholder={t('ابحث في الوصف', 'Search descriptions')} className="ps-10" data-testid="input-search-ledger" />
         </div>
-        <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border flex justify-between">
-          <span>{list.length} {t('قيد', 'entries')}</span><span>{t('المجموع ', 'Sum ')}<Money v={sum} className="text-foreground" /></span>
+        <Select value={cat} onValueChange={setCat}>
+          <SelectTrigger className="sm:w-56" data-testid="select-category-filter" aria-label={t('البند', 'Category')}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('كل البنود', 'All categories')}</SelectItem>
+            {s.categories.map((c) => <SelectItem key={c.id} value={c.id}>{t(c.name, c.nameEn)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="mb-4 text-muted-foreground flex justify-between gap-3">
+        <span>{list.length} {t('عملية', 'entries')}</span><span>{t('المجموع ', 'Total ')}<Money v={sum} exact className="text-foreground font-semibold" /></span>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="panel p-10 text-center">
+          <div className="font-semibold text-lg">{s.transactions.length === 0 ? t('ما في مصاريف للحين', 'No expenses yet') : t('ما في شي يطابق البحث', 'Nothing matches')}</div>
+          <p className="text-muted-foreground mt-1">{s.transactions.length === 0
+            ? (isManager ? t('اضغط "تسجيل مصروف" عشان تضيف أول مصروف.', 'Tap "Record expense" to add the first one.') : t('بتظهر هني أول ما يسجّل المدير المالي مصروف.', 'They will appear once the finance manager records one.'))
+            : t('جرّب كلمة ثانية أو اختر "كل البنود".', 'Try another word or choose "All categories".')}</p>
         </div>
-        {list.length === 0 ? (
-          <div className="p-12 text-center"><div className="font-medium">{t('لا توجد قيود', 'No entries')}</div><p className="text-sm text-muted-foreground mt-1">{t('لا شيء يطابق التصفية الحالية.', 'Nothing matches the current filter.')}</p></div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[640px]">
-              <thead className="text-[11px] text-muted-foreground"><tr className="border-b border-border">
-                <th className="text-start font-medium p-3">{t('التاريخ', 'Date')}</th><th className="text-start font-medium p-3">{t('الوصف', 'Description')}</th>
-                <th className="text-start font-medium p-3">{t('البند', 'Category')}</th><th className="text-start font-medium p-3">{t('النوع', 'Type')}</th>
-                <th className="text-end font-medium p-3">{t('المبلغ', 'Amount')}</th>
+      ) : (
+        <>
+          <div className="panel hidden md:block overflow-hidden">
+            <table className="w-full">
+              <thead className="text-[15px] text-muted-foreground bg-background"><tr className="border-b border-border">
+                <th className="text-start font-semibold p-4">{t('التاريخ', 'Date')}</th><th className="text-start font-semibold p-4">{t('الوصف', 'Description')}</th>
+                <th className="text-start font-semibold p-4">{t('البند', 'Category')}</th><th className="text-start font-semibold p-4">{t('النوع', 'Type')}</th>
+                <th className="text-end font-semibold p-4">{t('المبلغ (د.ك)', 'Amount (KWD)')}</th>
               </tr></thead>
               <tbody>
                 {list.map((x) => (
-                  <tr key={x.id} className="border-b border-border/60 hover:bg-accent/30" data-testid={`row-tx-${x.id}`}>
-                    <td className="p-3 num text-xs text-muted-foreground whitespace-nowrap">{dateLabel(x.date, lang)}</td>
-                    <td className="p-3">{x.description}</td>
-                    <td className="p-3 text-muted-foreground">{catName(x.categoryId)}</td>
-                    <td className="p-3"><span className={cn('text-[11px] rounded px-1.5 py-0.5 border', x.type === 'payroll' ? 'border-primary/40 text-primary' : 'border-border text-muted-foreground')}>{typeLabel(x.type)}</span></td>
-                    <td className="p-3 text-end num">{kwd(x.amount)}</td>
+                  <tr key={x.id} className="border-b border-border last:border-0" data-testid={`row-tx-${x.id}`}>
+                    <td className="p-4 num text-muted-foreground whitespace-nowrap">{dateLabel(x.date, lang)}</td>
+                    <td className="p-4">{transactionDescription(x, lang)}</td>
+                    <td className="p-4 text-muted-foreground">{catName(x.categoryId)}</td>
+                    <td className="p-4 text-muted-foreground">{typeLabel(x.type)}</td>
+                    <td className="p-4 text-end num font-semibold">{kwd(x.amount)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+          <div className="md:hidden space-y-3">
+            {list.map((x) => (
+              <div key={x.id} className="panel p-4" data-testid={`card-tx-${x.id}`}>
+                <KV k={t('التاريخ', 'Date')} v={<span className="num">{dateLabel(x.date, lang)}</span>} />
+                <div className="my-2 font-semibold break-words">{transactionDescription(x, lang)}</div>
+                <KV k={t('البند', 'Category')} v={catName(x.categoryId)} />
+                <KV k={t('المبلغ', 'Amount')} v={<Money v={x.amount} exact className="font-semibold" />} />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       {isManager && <ExpenseDialog open={open} onOpenChange={setOpen} s={s} />}
     </div>
   );
@@ -95,7 +112,7 @@ function ExpenseDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange:
   const [err, setErr] = useState<ApiErr | null>(null);
   const create = useCreateExpense({
     mutation: {
-      onSuccess: (m) => { qc.invalidateQueries({ queryKey: getGetClubStateQueryKey() }); toast({ title: t('تم تسجيل المصروف', 'Expense recorded'), description: m.message }); setF(blank); onOpenChange(false); },
+      onSuccess: (m) => { qc.invalidateQueries({ queryKey: getGetClubStateQueryKey() }); toast({ title: t('تم تسجيل المصروف', 'Expense recorded'), description: lang === 'ar' ? m.message : undefined }); setF(blank); onOpenChange(false); },
       onError: (e) => setErr(apiErr(e, lang)),
     },
   });
@@ -104,43 +121,47 @@ function ExpenseDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange:
   const over = c ? amt > c.remaining : false;
   const fmtBad = f.amount !== '' && !DEC3.test(f.amount.trim());
   const outside = f.date < s.seasonStart || f.date > s.seasonEnd;
+  const descShort = f.description !== '' && f.description.trim().length < 2;
   const ok = !!c && amt > 0 && f.description.trim().length >= 2 && !!f.date && !outside;
   const set = (k: keyof typeof f) => (e: ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setErr(null); onOpenChange(o); }}>
-      <DialogContent className="max-w-lg max-h-[92dvh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('تسجيل مصروف', 'Record expense')}</DialogTitle>
-          <DialogDescription>{t('يُقارن المبلغ بالمتاح فعلاً بعد خصم المصروف والمحجوز.', 'Checked against what is truly available after spent and reserved funds.')}</DialogDescription>
+          <DialogDescription>{t('المبلغ لازم يكون ضمن المتاح في البند بعد المحجوز للرواتب.', 'The amount must fit what is available in the category after reserved salaries.')}</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2"><Field label={t('البند', 'Category')}>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2"><Field id="select-expense-category" label={t('البند', 'Category')}>
             <Select value={f.categoryId} onValueChange={(v) => setF({ ...f, categoryId: v })}>
-              <SelectTrigger data-testid="select-expense-category"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="select-expense-category" data-testid="select-expense-category"><SelectValue /></SelectTrigger>
               <SelectContent>{s.categories.map((x) => <SelectItem key={x.id} value={x.id}>{t(x.name, x.nameEn)}</SelectItem>)}</SelectContent>
             </Select>
           </Field></div>
-          <Field label={t('المبلغ (د.ك)', 'Amount (KWD)')}><Input inputMode="decimal" className="num text-end" placeholder="0.000" value={f.amount} onChange={set('amount')} data-testid="input-amount" /></Field>
-          <Field label={t('التاريخ', 'Date')}><Input type="date" className="num" min={s.seasonStart} max={s.seasonEnd} value={f.date} onChange={set('date')} data-testid="input-date" /></Field>
-          <div className="col-span-2"><Field label={t('الوصف', 'Description')}><Input value={f.description} onChange={set('description')} data-testid="input-description" /></Field></div>
+          <Field id="input-amount" label={t('المبلغ (د.ك)', 'Amount (KWD)')}><Input id="input-amount" inputMode="decimal" className="num text-end" placeholder="0" value={f.amount} onChange={set('amount')} data-testid="input-amount" aria-invalid={fmtBad} /></Field>
+          <Field id="input-date" label={t('التاريخ', 'Date')}><Input id="input-date" type="date" className="num" min={s.seasonStart} max={s.seasonEnd} value={f.date} onChange={set('date')} data-testid="input-date" aria-invalid={outside} /></Field>
+          <div className="sm:col-span-2"><Field id="input-description" label={t('الوصف', 'Description')}><Input id="input-description" value={f.description} onChange={set('description')} data-testid="input-description" placeholder={t('مثلاً: إيجار ملعب التدريب', 'e.g. Training pitch rent')} /></Field></div>
         </div>
         {c && (
-          <div className={cn('rounded-lg border p-3 text-sm space-y-1.5', over ? 'border-destructive/50 bg-destructive/[.07]' : 'border-primary/30 bg-primary/[.04]')} data-testid="card-expense-preview">
-            <div className="flex justify-between"><span className="text-xs text-muted-foreground">{t('السقف', 'Cap')}</span><Money v={c.cap} /></div>
-            <div className="flex justify-between"><span className="text-xs text-muted-foreground">{t('مصروف + محجوز', 'Spent + reserved')}</span><Money v={c.spent + c.committed} /></div>
-            <div className="flex justify-between"><span className="text-xs text-muted-foreground">{t('المتاح فعلاً', 'Truly available')}</span><Money v={c.remaining} className="text-primary" /></div>
-            {over && <div className="text-xs text-destructive pt-1">{t('سيتجاوز السقف بـ ', 'Would exceed the cap by ')}<Money v={amt - c.remaining} /></div>}
+          <div className={cn('rounded-lg border p-4 space-y-1', over ? 'border-destructive/40 bg-destructive/[.05]' : 'border-border bg-background')} data-testid="card-expense-preview">
+            <KV k={t('سقف البند', 'Category cap')} v={<Money v={c.cap} exact />} />
+            <KV k={t('مصروف + محجوز', 'Spent + reserved')} v={<Money v={c.spent + c.committed} exact />} />
+            <KV k={t('المتاح فعلاً', 'Truly available')} strong v={<Money v={c.remaining} exact />} />
+            {over && <div className="text-destructive pt-1">{t('بيتجاوز السقف بـ ', 'Would go over the cap by ')}<Money v={amt - c.remaining} exact /></div>}
           </div>
         )}
-        {fmtBad && <p className="text-xs text-destructive">{t('المبلغ رقم موجب بثلاث خانات عشرية كحد أقصى.', 'Amount must be positive with at most 3 decimals.')}</p>}
-        {outside && <p className="text-xs text-destructive">{t('التاريخ خارج الموسم.', 'Date is outside the season.')}</p>}
-        {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} />}
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
+        <div role="alert" className="text-destructive text-[15px] space-y-0.5">
+          {fmtBad && <p>{t('اكتب المبلغ رقم موجب، وبحد أقصى ثلاث خانات بعد الفاصلة.', 'Enter a positive amount with at most 3 decimals.')}</p>}
+          {outside && <p>{t('التاريخ برّا الموسم.', 'The date is outside the season.')}</p>}
+          {descShort && <p>{t('الوصف لازم حرفين على الأقل.', 'Description needs at least 2 characters.')}</p>}
+        </div>
+        {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('المصروف', 'The expense')} />}
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
           <Button disabled={!ok || create.isPending} data-testid="button-submit-expense"
             onClick={() => { setErr(null); create.mutate({ data: { categoryId: f.categoryId, amount: Math.round(amt * 1000) / 1000, description: f.description.trim(), date: f.date } }); }}>
-            {create.isPending ? t('جارٍ التسجيل…', 'Recording…') : t('تسجيل', 'Record')} {amt > 0 && <span className="num ms-1">{kwd(amt)}</span>}
+            {create.isPending ? t('جاري التسجيل…', 'Recording…') : t('تسجيل', 'Record')} {amt > 0 && <span className="num">{kwd(amt)} {t('د.ك', 'KWD')}</span>}
           </Button>
         </div>
       </DialogContent>

@@ -10,7 +10,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('saqfi-lang', lang);
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.title = lang === 'ar' ? 'سقفي — ولا دينار فوق السقف' : 'Saqfi — Not one dinar over the cap';
+    document.title = lang === 'ar' ? 'سقفي: ولا دينار فوق السقف' : 'Saqfi: Not one dinar over the cap';
   }, [lang]);
   return <LangCtx.Provider value={{ lang, setLang, t: (ar, en) => (lang === 'ar' ? ar : en) }}>{children}</LangCtx.Provider>;
 }

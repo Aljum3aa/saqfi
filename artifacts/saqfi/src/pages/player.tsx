@@ -1,7 +1,7 @@
 import type { Session } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
 import { kwd, monthLabel, monthsInclusive, posLabel, dateLabel } from '@/lib/saqfi';
-import { useClub, PageHead, Money, PageSkeleton, ErrorPanel } from '@/components/shell';
+import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, KV } from '@/components/shell';
 
 export default function PlayerHome({ session }: { session: Session }) {
   const { t, lang } = useLang();
@@ -14,51 +14,61 @@ export default function PlayerHome({ session }: { session: Session }) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <PageHead eyebrow={t('ملفي', 'My file')} title={session.name} sub={t('عقدك وسجل رواتبك فقط. البيانات المالية للنادي غير متاحة لدور اللاعب.', 'Your contract and salary history only. Club finances are not available to the player role.')} />
+      <PageHead title={session.name} sub={t('عقدك ورواتبك. أرقام النادي الثانية مو ظاهرة لك.', 'Your contract and salaries. Other club figures are not shown to you.')} />
       {s.contracts.length === 0 ? (
-        <div className="panel p-10 text-center text-muted-foreground">{t('لا يوجد عقد مسجل باسمك.', 'No contract is registered to you.')}</div>
+        <div className="panel p-10 text-center text-muted-foreground mb-6">{t('ما في عقد مسجّل باسمك. تواصل مع المدير المالي.', 'No contract is registered to you. Contact the finance manager.')}</div>
       ) : s.contracts.map((c) => (
-        <div key={c.id} className="panel p-6 mb-4 rise relative overflow-hidden" data-testid={`card-own-contract-${c.id}`}>
-          <div className="absolute top-0 inset-x-0 gold-rule" />
+        <section key={c.id} className="panel p-5 md:p-8 mb-6" data-testid={`card-own-contract-${c.id}`}>
           <div className="flex flex-wrap justify-between gap-4">
             <div>
-              <div className="text-xl font-bold">{lang === 'ar' ? c.name : c.nameEn}</div>
-              <div className="text-sm text-muted-foreground">{posLabel(c.position, lang)} · {t(s.club, s.clubEn)}</div>
+              <div className="text-xl font-semibold">{lang === 'ar' ? c.name : c.nameEn}</div>
+              <div className="text-muted-foreground">{posLabel(c.position, lang)} · {t(s.club, s.clubEn)}</div>
             </div>
-            <div className="text-end"><div className="eyebrow mb-1">{t('الراتب الشهري', 'Monthly salary')}</div><Money v={c.salary} className="text-2xl font-semibold text-primary" /></div>
+            <div className="text-end"><div className="text-muted-foreground">{t('الراتب الشهري', 'Monthly salary')}</div><Money v={c.salary} exact className="text-[28px] font-semibold" /></div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-sm">
-            <div><div className="eyebrow mb-1">{t('البداية', 'Start')}</div><span className="num">{dateLabel(c.start, lang)}</span></div>
-            <div><div className="eyebrow mb-1">{t('النهاية', 'End')}</div><span className="num">{dateLabel(c.end, lang)}</span></div>
-            <div><div className="eyebrow mb-1">{t('القيمة الكلية', 'Total value')}</div><Money v={c.totalCost} /></div>
-            <div><div className="eyebrow mb-1">{t('المتبقي', 'Outstanding')}</div><Money v={c.outstanding} /></div>
+          <div className="mt-5 pt-4 border-t border-border sm:grid sm:grid-cols-2 sm:gap-x-8">
+            <KV k={t('يبدأ', 'Starts')} v={<span className="num">{dateLabel(c.start, lang)}</span>} />
+            <KV k={t('ينتهي', 'Ends')} v={<span className="num">{dateLabel(c.end, lang)}</span>} />
+            <KV k={t('قيمة العقد', 'Contract value')} v={<Money v={c.totalCost} exact />} />
+            <KV k={t('الباقي لك', 'Still to be paid')} v={<Money v={c.outstanding} exact />} />
+            <KV k={t('المدة', 'Length')} v={<span>{monthsInclusive(c.start, c.end)} {t('شهر', 'months')}</span>} />
           </div>
-          <div className="text-[11px] text-muted-foreground mt-4">{monthsInclusive(c.start, c.end)} {t('شهراً شاملة', 'months inclusive')}</div>
-        </div>
+        </section>
       ))}
-      <div className="panel p-5 rise" style={{ animationDelay: '.06s' }}>
-        <div className="flex justify-between items-baseline mb-3">
-          <h2 className="font-semibold">{t('سجل الرواتب', 'Salary history')}</h2>
-          <span className="text-xs text-muted-foreground">{t('المستلم ', 'Received ')}<Money v={received} className="text-foreground" /></span>
+      <section className="panel p-5 md:p-8">
+        <div className="flex flex-wrap justify-between items-baseline gap-2 mb-4">
+          <h2 className="text-xl font-semibold">{t('رواتبك', 'Your salaries')}</h2>
+          <span className="text-muted-foreground">{t('المستلم ', 'Received ')}<Money v={received} exact className="text-foreground font-semibold" /></span>
         </div>
-        {lines.length === 0 ? <p className="text-sm text-muted-foreground">{t('لم يُرحّل أي راتب بعد.', 'No salary posted yet.')}</p> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[480px]">
-              <thead className="text-[11px] text-muted-foreground"><tr className="border-b border-border">
-                <th className="text-start font-medium p-2">{t('الشهر', 'Month')}</th><th className="text-end font-medium p-2">{t('الراتب', 'Salary')}</th>
-                <th className="text-end font-medium p-2">{t('مكافأة', 'Bonus')}</th><th className="text-end font-medium p-2">{t('غرامة', 'Fine')}</th><th className="text-end font-medium p-2">{t('الصافي', 'Net')}</th>
+        {lines.length === 0 ? <p className="text-muted-foreground">{t('ما انصرف لك راتب للحين. بيظهر هني أول ما ينصرف.', 'No salary paid yet. It will show here once paid.')}</p> : (
+          <>
+            <table className="w-full hidden md:table">
+              <thead className="text-[15px] text-muted-foreground"><tr className="border-b border-border">
+                <th className="text-start font-semibold p-3">{t('الشهر', 'Month')}</th><th className="text-end font-semibold p-3">{t('الراتب', 'Salary')}</th>
+                <th className="text-end font-semibold p-3">{t('مكافأة', 'Bonus')}</th><th className="text-end font-semibold p-3">{t('غرامة', 'Fine')}</th><th className="text-end font-semibold p-3">{t('الصافي', 'Net')}</th>
               </tr></thead>
               <tbody>{lines.map((l) => (
-                <tr key={l.id + l.playerId} className="border-b border-border/60">
-                  <td className="p-2">{monthLabel(l.month, lang)}</td><td className="p-2 text-end num">{kwd(l.salary)}</td>
-                  <td className="p-2 text-end num">{kwd(l.bonus)}</td><td className="p-2 text-end num">{kwd(l.fine)}</td><td className="p-2 text-end num text-primary">{kwd(l.net)}</td>
+                <tr key={l.id + l.playerId} className="border-b border-border last:border-0">
+                  <td className="p-3">{monthLabel(l.month, lang)}</td><td className="p-3 text-end num">{kwd(l.salary)}</td>
+                  <td className="p-3 text-end num">{kwd(l.bonus)}</td><td className="p-3 text-end num">{kwd(l.fine)}</td><td className="p-3 text-end num font-semibold">{kwd(l.net)}</td>
                 </tr>
               ))}</tbody>
             </table>
-          </div>
+            <div className="md:hidden divide-y divide-border">
+              {lines.map((l) => (
+                <div key={l.id + l.playerId} className="py-3" data-testid={`card-salary-${l.month}`}>
+                  <div className="font-semibold mb-1">{monthLabel(l.month, lang)}</div>
+                  <KV k={t('الراتب', 'Salary')} v={<Money v={l.salary} exact />} />
+                  <KV k={t('مكافأة', 'Bonus')} v={<Money v={l.bonus} exact />} />
+                  <KV k={t('غرامة', 'Fine')} v={<Money v={l.fine} exact />} />
+                  <KV k={t('الصافي', 'Net')} strong v={<Money v={l.net} exact />} />
+                </div>
+              ))}
+            </div>
+          </>
         )}
-        <p className="text-[11px] text-muted-foreground mt-3">{t('قيود محاسبية فقط، وليست إشعارات تحويل بنكي.', 'Accounting entries only, not bank transfer receipts.')}</p>
-      </div>
+        <p className="text-[15px] text-muted-foreground mt-4">{t('هذي قيود محاسبية، مو إشعارات تحويل بنكي.', 'These are accounting entries, not bank transfer receipts.')}</p>
+      </section>
     </div>
   );
 }

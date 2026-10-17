@@ -1,23 +1,13 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { Link } from 'wouter';
+import { useLang } from '@/lib/i18n';
 
 export default function NotFound() {
+  const { t } = useLang();
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">
-              404 Page Not Found
-            </h1>
-          </div>
-
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
+    <div className="panel max-w-md mx-auto p-8 text-center">
+      <h1 className="text-2xl font-semibold mb-2">{t('الصفحة مو موجودة', 'Page not found')}</h1>
+      <p className="text-muted-foreground mb-5">{t('الرابط غلط أو الصفحة انشالت.', 'The link is wrong or the page was removed.')}</p>
+      <Link href="/dashboard" data-testid="link-back-home" className="inline-flex min-h-11 items-center rounded-lg bg-primary px-5 font-semibold text-primary-foreground">{t('رجوع للرئيسية', 'Back to home')}</Link>
     </div>
   );
 }

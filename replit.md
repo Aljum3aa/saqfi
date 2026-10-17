@@ -43,7 +43,9 @@ No payments are required. Any future payment experiments must use Stripe test mo
 - `lib/api-spec/openapi.yaml`: source of truth for API contracts.
 - `lib/api-client-react/`, `lib/api-zod/`: generated client hooks/validation.
 - Existing PostgreSQL scaffold is unused; do not replace MongoDB with it.
-- Arabic RTL first; English toggle; navy/gold fintech design; KWD to 3 decimals.
+- Arabic RTL first; English toggle; calm light banking interface with navy accent.
+- Show whole dinars in summaries; exact detail amounts retain three decimals when
+  they actually contain fils. Never round or change stored financial amounts.
 - No emojis or decorative icons before labels. Functional icons only.
 - Vercel is the intended eventual deployment target; deployment configuration is
   a later step, not a claim that this development build is deployed there.
@@ -115,3 +117,31 @@ No payments are required. Any future payment experiments must use Stripe test mo
 - Key endpoints: `/session` GET/POST/DELETE, `/state` GET, `/budget` PUT,
   `/contracts` POST, `/expenses` POST, `/payroll` POST.
 - Artifacts have managed workflows; do not create duplicate servers.
+
+## Interface direction
+
+The user wants Saqfi simple, organised and easy to use, like a clean Kuwaiti bank
+app, not a flashy tech demo. Preserve this direction in later features.
+
+- Off-white background, white cards, thin light-grey borders, soft shadows,
+  near-black text. Deep navy is the only brand/action accent; gold ONLY in logo.
+- Green means paid/good, amber warning, red over-cap/rejected.
+- No decorative grids, gradients, glows, stripes, numbering, dots or tiny
+  uppercase eyebrow labels. One Arabic font: IBM Plex Sans Arabic, 400/600.
+- Readable 16px body, generous spacing, 12px corners and 44px touch targets.
+- Five sections: الرئيسية، الميزانية، اللاعبين والعقود، الرواتب، المصاريف.
+  Mobile bottom tabs; desktop simple top navigation. Advisor is a separate button.
+- Home has only the budget summary, attention list, category list and a one-sentence
+  forecast. Monthly spending chart belongs on the budget page.
+- Remaining in the home summary means budget minus spending. Always distinguish
+  salary reservations from genuinely spendable money elsewhere in the same card.
+- Plain short Kuwaiti/Gulf Arabic, one page title/short explanation/main action.
+  Empty states explain what to do. Cap failures explain amount and next steps.
+- Mobile tables become stacked cards; verify every page at 375px and desktop.
+- Advisor availability dialog is honest about the feature not being active yet;
+  it is not an implemented AI assistant and must not fabricate answers.
+- The user approved this redesign and asked to keep it exactly as it is. Make only
+  specifically requested polish changes, not another visual redesign.
+- No em/en dashes in visible wording. Show month names instead of ISO month dates;
+  keep stored ISO values intact. The status strip is one short, non-wrapping line
+  with the role once and the data mode.

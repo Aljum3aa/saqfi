@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Play } from 'lucide-react';
+import { ChevronDown, Banknote } from 'lucide-react';
 import { useRunPayroll, getGetClubStateQueryKey, type Session } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
-import { apiErr, kwd, monthLabel, ym, dateLabel, type ApiErr } from '@/lib/saqfi';
-import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, ErrorBox } from '@/components/shell';
+import { apiErr, kwd, kwdText, monthLabel, ym, dateLabel, type ApiErr } from '@/lib/saqfi';
+import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, ErrorBox, KV } from '@/components/shell';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -22,7 +22,7 @@ export default function Payroll({ session }: { session: Session }) {
   const [err, setErr] = useState<ApiErr | null>(null);
   const run = useRunPayroll({
     mutation: {
-      onSuccess: (m) => { setConfirm(false); qc.invalidateQueries({ queryKey: getGetClubStateQueryKey() }); toast({ title: t('تم ترحيل كشف الرواتب', 'Payroll posted'), description: m.message }); },
+      onSuccess: (m) => { setConfirm(false); qc.invalidateQueries({ queryKey: getGetClubStateQueryKey() }); toast({ title: t('تم صرف رواتب الشهر', 'Salaries paid for the month'), description: lang === 'ar' ? m.message : undefined }); },
       onError: (e) => { setConfirm(false); setErr(apiErr(e, lang)); },
     },
   });
@@ -34,92 +34,102 @@ export default function Payroll({ session }: { session: Session }) {
   const due = s.contracts.filter((c) => month && ym(c.start) <= month && ym(c.end) >= month);
   const dueTotal = due.reduce((a, c) => a + Math.round(c.salary * 1000), 0) / 1000;
   const history = [...s.payrolls].sort((a, b) => b.month.localeCompare(a.month));
+  const notYet = !!month && month > s.today.slice(0, 7);
+  const name = (id: string, fallback: string) => s.contracts.find((c) => c.id === id)?.[lang === 'ar' ? 'name' : 'nameEn'] ?? fallback;
 
   return (
     <div>
-      <PageHead eyebrow={t('الرواتب', 'Payroll')} title={t('كشف الرواتب الشهري', 'Monthly payroll')}
-        sub={t('قيود محاسبية فقط — لا يتم أي تحويل بنكي. كل شهر يُرحّل مرة واحدة.', 'Accounting entries only — no bank transfer is made. Each month posts once.')}
-        action={!isManager ? <ReadOnlyNote /> : undefined} />
+      <PageHead title={t('الرواتب', 'Payroll')}
+        sub={t('صرف الرواتب هني قيد محاسبي بس، ما في تحويل بنكي. كل شهر ينصرف مرة وحدة.', 'Paying salaries here is an accounting entry only, no bank transfer. Each month is paid once.')}
+        action={isManager ? (month ? (
+          <Button disabled={run.isPending || due.length === 0 || notYet} data-testid="button-run-payroll" onClick={() => { setErr(null); setConfirm(true); }}>
+            <Banknote className="h-4 w-4" />{t('صرف رواتب الشهر', 'Pay this month\'s salaries')}
+          </Button>) : undefined) : <ReadOnlyNote />} />
 
-      <div className="grid lg:grid-cols-[1.2fr_1fr] gap-4">
-        <div className="panel p-5 rise">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="eyebrow mb-1.5">{t('الشهر المستحق', 'Month due')}</div>
-              <div className="text-2xl font-bold" data-testid="text-payroll-month">{month ? monthLabel(month, lang) : t('لا يوجد شهر مستحق', 'Nothing due')}</div>
-              <div className="mt-1 text-sm text-muted-foreground">{t(`${due.length} لاعب · الإجمالي `, `${due.length} players · total `)}<Money v={dueTotal} className="text-foreground font-semibold" /></div>
-            </div>
-            {isManager && month && (
-              <Button size="lg" className="gap-2" disabled={run.isPending || due.length === 0 || month > s.today.slice(0, 7)} data-testid="button-run-payroll" onClick={() => { setErr(null); setConfirm(true); }}>
-                <Play className="h-4 w-4 rtl:rotate-180" />{t('تشغيل الكشف', 'Run payroll')}
-              </Button>
-            )}
-          </div>
-          <div className="mt-3 inline-block text-[11px] rounded border border-primary/30 text-primary/90 px-2 py-0.5">{t('محاسبي فقط · بدون دفع بنكي', 'Accounting only · no bank payout')}</div>
-          {err && <div className="mt-4"><ErrorBox msg={err.msg} exceeded={err.exceeded} /></div>}
-          <div className="mt-5 max-h-[420px] overflow-y-auto -mx-2">
-            <table className="w-full text-sm">
-              <thead className="text-[11px] text-muted-foreground sticky top-0 bg-card"><tr><th className="text-start font-medium p-2">{t('اللاعب', 'Player')}</th><th className="text-end font-medium p-2">{t('الراتب', 'Salary')}</th></tr></thead>
-              <tbody>
-                {due.map((c) => (
-                  <tr key={c.id} className="border-t border-border/60"><td className="p-2">{lang === 'ar' ? c.name : c.nameEn}</td><td className="p-2 text-end num">{kwd(c.salary)}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {err && <div className="mb-6"><ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('صرف الرواتب', 'Payroll')} /></div>}
 
-        <div className="panel p-5 rise" style={{ animationDelay: '.06s' }}>
-          <h2 className="font-semibold mb-3">{t('سجل الكشوف', 'Payroll history')}</h2>
-          {history.length === 0 ? <p className="text-sm text-muted-foreground">{t('لم يُرحّل أي كشف بعد.', 'No payroll posted yet.')}</p> : (
-            <div className="space-y-2">
-              {history.map((p) => (
-                <div key={p.id} className="rounded-lg border border-border" data-testid={`card-payroll-${p.month}`}>
-                  <button className="w-full flex items-center gap-3 p-3 text-start" onClick={() => setOpenRun(openRun === p.id ? null : p.id)} data-testid={`button-toggle-payroll-${p.month}`}>
+      <section className="panel p-5 md:p-8 mb-6">
+        <div className="text-muted-foreground">{t('الشهر الجاي', 'Next month due')}</div>
+        <div className="text-[26px] font-semibold" data-testid="text-payroll-month">{month ? monthLabel(month, lang) : t('خلصت رواتب الموسم', 'All season salaries paid')}</div>
+        {month && <div className="mt-1">{t(`${due.length} لاعب، المجموع `, `${due.length} players, total `)}<Money v={dueTotal} exact className="font-semibold" /></div>}
+        {notYet && <p className="mt-2 text-muted-foreground">{t('ما يمديك تصرف هالشهر قبل لا يبدأ.', 'You can\'t pay this month before it starts.')}</p>}
+        {month && due.length > 0 && (
+          <ul className="mt-5 divide-y divide-border border-t border-border">
+            {due.map((c) => (
+              <li key={c.id} className="flex justify-between gap-3 py-3"><span>{lang === 'ar' ? c.name : c.nameEn}</span><Money v={c.salary} exact /></li>
+            ))}
+          </ul>
+        )}
+        {month && due.length === 0 && <p className="mt-3 text-muted-foreground">{t('ما في لاعبين عقودهم تغطي هالشهر. أضف عقد من صفحة اللاعبين والعقود.', 'No contracts cover this month. Add one on the Players & contracts page.')}</p>}
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-4">{t('الرواتب اللي انصرفت', 'Paid salaries')}</h2>
+        {history.length === 0 ? (
+          <div className="panel p-8 text-center text-muted-foreground">{t('ما انصرفت رواتب للحين. أول ما تصرف رواتب الشهر بتطلع هني.', 'No salaries paid yet. They will show here after the first payroll.')}</div>
+        ) : (
+          <div className="space-y-3">
+            {history.map((p) => {
+              const isOpen = openRun === p.id;
+              return (
+                <div key={p.id} className="panel overflow-hidden" data-testid={`card-payroll-${p.month}`}>
+                  <button className="w-full min-h-16 flex items-center gap-3 p-4 text-start hover:bg-background" aria-expanded={isOpen}
+                    onClick={() => setOpenRun(isOpen ? null : p.id)} data-testid={`button-toggle-payroll-${p.month}`}>
                     <div className="flex-1">
-                      <div className="font-medium text-sm">{monthLabel(p.month, lang)}</div>
-                      <div className="text-[11px] text-muted-foreground">{t('رُحّل ', 'Posted ')}{dateLabel(p.paidAt, lang)} · {p.lines.length} {t('سطر', 'lines')}</div>
+                      <div className="font-semibold">{monthLabel(p.month, lang)}</div>
+                      <div className="text-[15px] text-muted-foreground">{t('انصرف ', 'Paid ')}{dateLabel(p.paidAt, lang)} · {p.lines.length} {t('لاعب', 'players')}</div>
                     </div>
-                    <Money v={p.total} className="text-sm font-semibold" />
-                    <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', openRun === p.id && 'rotate-180')} />
+                    <Money v={p.total} exact className="font-semibold" />
+                    <ChevronDown className={cn('h-5 w-5 text-muted-foreground transition-transform', isOpen && 'rotate-180')} />
                   </button>
-                  {openRun === p.id && (
-                    <div className="border-t border-border overflow-x-auto">
-                      <table className="w-full text-xs min-w-[420px]">
-                        <thead className="text-muted-foreground"><tr>
-                          <th className="text-start font-medium p-2">{t('اللاعب', 'Player')}</th><th className="text-end font-medium p-2">{t('الراتب', 'Salary')}</th>
-                          <th className="text-end font-medium p-2">{t('مكافأة', 'Bonus')}</th><th className="text-end font-medium p-2">{t('غرامة', 'Fine')}</th><th className="text-end font-medium p-2">{t('الصافي', 'Net')}</th>
+                  {isOpen && (
+                    <div className="border-t border-border">
+                      <table className="w-full hidden md:table">
+                        <thead className="text-[15px] text-muted-foreground bg-background"><tr>
+                          <th className="text-start font-semibold p-3 ps-4">{t('اللاعب', 'Player')}</th><th className="text-end font-semibold p-3">{t('الراتب', 'Salary')}</th>
+                          <th className="text-end font-semibold p-3">{t('مكافأة', 'Bonus')}</th><th className="text-end font-semibold p-3">{t('غرامة', 'Fine')}</th><th className="text-end font-semibold p-3 pe-4">{t('الصافي', 'Net')}</th>
                         </tr></thead>
                         <tbody>{p.lines.map((l) => (
-                          <tr key={l.playerId} className="border-t border-border/50">
-                            <td className="p-2">{s.contracts.find((c) => c.id === l.playerId)?.[lang === 'ar' ? 'name' : 'nameEn'] ?? l.name}</td>
-                            <td className="p-2 text-end num">{kwd(l.salary)}</td><td className="p-2 text-end num">{kwd(l.bonus)}</td>
-                            <td className="p-2 text-end num">{kwd(l.fine)}</td><td className="p-2 text-end num text-primary">{kwd(l.net)}</td>
+                          <tr key={l.playerId} className="border-t border-border">
+                            <td className="p-3 ps-4">{name(l.playerId, l.name)}</td>
+                            <td className="p-3 text-end num">{kwd(l.salary)}</td><td className="p-3 text-end num">{kwd(l.bonus)}</td>
+                            <td className="p-3 text-end num">{kwd(l.fine)}</td><td className="p-3 pe-4 text-end num font-semibold">{kwd(l.net)}</td>
                           </tr>
                         ))}</tbody>
                       </table>
+                      <div className="md:hidden divide-y divide-border">
+                        {p.lines.map((l) => (
+                          <div key={l.playerId} className="p-4" data-testid={`card-payroll-line-${p.month}-${l.playerId}`}>
+                            <div className="font-semibold mb-1">{name(l.playerId, l.name)}</div>
+                            <KV k={t('الراتب', 'Salary')} v={<Money v={l.salary} exact />} />
+                            <KV k={t('مكافأة', 'Bonus')} v={<Money v={l.bonus} exact />} />
+                            <KV k={t('غرامة', 'Fine')} v={<Money v={l.fine} exact />} />
+                            <KV k={t('الصافي', 'Net')} strong v={<Money v={l.net} exact />} />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('تأكيد ترحيل كشف ', 'Confirm payroll for ')}{monthLabel(month, lang)}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(`سيتم تسجيل ${due.length} راتباً بإجمالي ${kwd(dueTotal)} د.ك كمصروف فعلي، وتحرير الحجز المقابل. قيد محاسبي فقط بدون أي تحويل بنكي، ولا يمكن تكراره لنفس الشهر.`,
-                `${due.length} salaries totalling ${kwd(dueTotal)} KWD will be booked as spent and the matching reservation released. Accounting entry only, no bank transfer, and it cannot repeat for the same month.`)}
+            <AlertDialogTitle>{t('صرف رواتب ', 'Pay salaries for ')}{monthLabel(month, lang)}</AlertDialogTitle>
+            <AlertDialogDescription className="text-[15px]">
+              {t(`بيتسجّل ${due.length} راتب بمجموع ${kwdText(dueTotal, lang)} كمصروف. قيد محاسبي بس بدون تحويل بنكي، وما يتكرر لنفس الشهر.`,
+                `${due.length} salaries totalling ${kwdText(dueTotal, lang)} will be recorded as spent. Accounting entry only, no bank transfer, and it can't repeat for the same month.`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2">
             <AlertDialogCancel>{t('إلغاء', 'Cancel')}</AlertDialogCancel>
             <AlertDialogAction data-testid="button-confirm-payroll" disabled={run.isPending} onClick={(e) => { e.preventDefault(); run.mutate({ data: { month } }); }}>
-              {run.isPending ? t('جارٍ الترحيل…', 'Posting…') : t('ترحيل الكشف', 'Post payroll')}
+              {run.isPending ? t('جاري الصرف…', 'Paying…') : t('تأكيد الصرف', 'Confirm payment')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

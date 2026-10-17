@@ -1,0 +1,1 @@
+- [Browser checks on Nix](browser-checks.md) — use the supplied system Chromium; downloaded browser binaries may lack shared libraries.
