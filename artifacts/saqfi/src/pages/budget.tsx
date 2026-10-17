@@ -85,9 +85,9 @@ function MonthlyChart({ s }: { s: ClubState }) {
       ) : (
         <div className="h-64" dir="ltr" data-testid="chart-monthly">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={s.trend.map((x) => ({ ...x, label: monthLabel(x.month, lang) }))} margin={{ left: 0, right: 0, top: 4 }}>
+            <BarChart data={(lang === 'ar' ? [...s.trend].reverse() : s.trend).map((x) => ({ ...x, label: monthLabel(x.month, lang) }))} margin={{ left: 0, right: 0, top: 4 }}>
               <CartesianGrid vertical={false} stroke="hsl(220 20% 92%)" />
-              <XAxis dataKey="label" tick={{ fill: 'hsl(218 12% 42%)', fontSize: 12 }} axisLine={false} tickLine={false} reversed={lang === 'ar'} />
+              <XAxis dataKey="label" tick={{ fill: 'hsl(218 12% 42%)', fontSize: 12 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
               <YAxis tick={{ fill: 'hsl(218 12% 42%)', fontSize: 12 }} axisLine={false} tickLine={false} width={48} orientation={lang === 'ar' ? 'right' : 'left'}
                 tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
               <Tooltip cursor={{ fill: 'hsl(218 40% 95%)', radius: 8 }} contentStyle={{ background: '#fff', border: '1px solid hsl(220 16% 90%)', borderRadius: 12, fontSize: 14, fontFamily: 'inherit', boxShadow: '0 8px 24px hsl(218 40% 20% / .08)' }}

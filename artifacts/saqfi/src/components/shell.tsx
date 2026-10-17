@@ -42,6 +42,10 @@ export function LangToggle({ className }: { className?: string }) {
   );
 }
 
+export const clubCrest = () => `${import.meta.env.BASE_URL}club/crest.webp`;
+export const clubKit = () => `${import.meta.env.BASE_URL}club/kit.webp`;
+const seasonLabel = (s?: ClubState) => (s ? `${s.seasonStart.slice(0, 4)}/${s.seasonEnd.slice(2, 4)}` : '');
+
 export function useClub() {
   return useGetClubState({ query: { queryKey: getGetClubStateQueryKey(), refetchInterval: 30000, refetchOnWindowFocus: true } });
 }
@@ -85,7 +89,7 @@ function Brand({ s, dark = false }: { s?: ClubState; dark?: boolean }) {
       <Mark size={36} onDark={dark} />
       <div className="leading-tight min-w-0">
         <div className="font-display font-semibold text-[19px]">{t('سقفي', 'Saqfi')}</div>
-        <div className={cn('text-[13px] truncate max-[359px]:hidden', dark ? 'text-white/60' : 'text-muted-foreground')}>{s ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
+        <div className={cn('text-[13px] truncate max-[359px]:hidden', dark ? 'text-white/60' : 'text-muted-foreground')}>{s && !dark ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
       </div>
     </Link>
   );
@@ -120,6 +124,15 @@ export function Shell({ session, children }: { session: Session; children: React
       {!isPlayer && (
         <aside className="hidden lg:flex lg:flex-col w-[268px] shrink-0 sticky top-0 h-[100dvh] bg-[#0f1f3d] text-white px-4 py-6">
           <div className="px-2"><Brand s={s} dark /></div>
+          {s && (
+            <div className="mt-6 flex items-center gap-3 rounded-2xl bg-white/[.06] p-3" data-testid="card-club">
+              <img src={clubCrest()} alt="" className="h-11 w-11 object-contain shrink-0" />
+              <div className="min-w-0">
+                <div className="font-semibold truncate">{t(s.club, s.clubEn)}</div>
+                <div className="text-[12px] text-white/60">{t('موسم ', 'Season ')}<span className="num">{seasonLabel(s)}</span></div>
+              </div>
+            </div>
+          )}
           <nav className="mt-8 flex flex-col gap-1" aria-label={t('الأقسام', 'Sections')}>
             {NAV.map((n) => {
               const Icon = n.icon;
@@ -155,7 +168,7 @@ export function Shell({ session, children }: { session: Session; children: React
       <div className="flex-1 min-w-0 flex flex-col min-h-[100dvh]">
         {/* Top bar: always on mobile, and for the player view on desktop */}
         <header className={cn('sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur', !isPlayer && 'lg:hidden')}>
-          <div className="mx-auto max-w-[1100px] px-4 md:px-6 h-16 flex items-center gap-2">
+          <div className="mx-auto max-w-[1240px] px-4 md:px-6 h-16 flex items-center gap-2">
             <Brand s={s} />
             <div className="ms-auto flex items-center gap-1">
               {!isPlayer && (
@@ -172,7 +185,7 @@ export function Shell({ session, children }: { session: Session; children: React
           </div>
         </header>
 
-        <main className={cn('flex-1 mx-auto w-full max-w-[1100px] px-4 md:px-8 py-6 md:py-10', !isPlayer && 'pb-28 lg:pb-12')}>
+        <main className={cn('flex-1 mx-auto w-full max-w-[1240px] px-4 md:px-8 xl:px-10 py-6 md:py-10', !isPlayer && 'pb-28 lg:pb-12')}>
           {modeText && (
             <div className="lg:hidden mb-5 text-[13px] text-muted-foreground truncate">{roleLabel(session.role, t)} · {modeText}</div>
           )}

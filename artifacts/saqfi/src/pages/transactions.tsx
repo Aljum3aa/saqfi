@@ -19,7 +19,7 @@ export default function Transactions({ session }: { session: Session }) {
   const q = useClub();
   const [term, setTerm] = useState('');
   const [cat, setCat] = useState('all');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('new') === '1' && session.role === 'manager');
   const list = useMemo(() => {
     const k = term.trim().toLowerCase();
     return [...(q.data?.transactions ?? [])]

@@ -37,7 +37,7 @@ export function seedClub(): Club {
   });
   return {
     id: "saqfi-demo-club", revision: 0,
-    club: "نادي الساحل الجديد", clubEn: "New Sahel FC",
+    club: "نادي الصقور", clubEn: "Al-Suqoor FC",
     seasonStart: "2026-07-01", seasonEnd: "2027-06-30", totalBudget: 400000,
     categories: [
       { id: "players", name: "رواتب اللاعبين", nameEn: "Player salaries", cap: 260000 },

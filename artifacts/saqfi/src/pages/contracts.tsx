@@ -18,7 +18,7 @@ export default function Contracts({ session }: { session: Session }) {
   const q = useClub();
   const [term, setTerm] = useState('');
   const [pos, setPos] = useState('all');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('new') === '1' && session.role === 'manager');
   const list = useMemo(() => {
     const c = q.data?.contracts ?? [];
     const k = term.trim().toLowerCase();
@@ -76,7 +76,7 @@ export default function Contracts({ session }: { session: Session }) {
               <li key={c.id} data-testid={`row-contract-${c.id}`}
                 className="px-4 md:px-5 py-3.5 grid grid-cols-[auto_1fr_auto] md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-3 md:gap-4 items-center hover:bg-muted/40 transition-colors">
                 <div className="contents md:flex md:items-center md:gap-3 min-w-0">
-                  <Avatar name={c.nameEn || c.name} size={42} />
+                  <Avatar name={lang === 'ar' ? c.name : c.nameEn} size={42} />
                   <div className="min-w-0">
                     <div className="font-semibold truncate">{name(c)}</div>
                     <div className="mt-0.5"><Chip tone="navy">{posLabel(c.position, lang)}</Chip></div>

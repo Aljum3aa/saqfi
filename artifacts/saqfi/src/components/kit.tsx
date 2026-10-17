@@ -14,6 +14,10 @@ const AV_TONES = [
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
+  if (/[؀-ۿ]/.test(parts[0])) {   /* Arabic: one letter reads cleaner than two isolated forms */
+    const w = parts.find((p) => !/^(عبد|أبو|ابو|ال)$/.test(p)) ?? parts[0];
+    return w.replace(/^ال/, '')[0] ?? '?';
+  }
   const a = parts[0][0] ?? '';
   const b = parts.length > 1 ? parts[parts.length - 1][0] ?? '' : '';
   return (a + b).toUpperCase();

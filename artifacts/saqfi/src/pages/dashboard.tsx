@@ -1,10 +1,10 @@
 import { Link } from 'wouter';
-import { AlertTriangle, CheckCircle2, Banknote, ArrowDownLeft, CalendarClock, TrendingUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Banknote, ArrowDownLeft, CalendarClock, TrendingUp, Receipt, UserPlus } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { Session } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
 import { kwd, kwdText, displayText } from '@/lib/saqfi';
-import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote } from '@/components/shell';
+import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, clubCrest } from '@/components/shell';
 import { CategoryRow, SpendBar } from '@/components/category-bar';
 import { cn } from '@/lib/utils';
 
@@ -17,16 +17,28 @@ function Tile({ icon: Icon, label, children, note, tone = 'navy' }:
   { icon: typeof Banknote; label: string; children: React.ReactNode; note?: React.ReactNode; tone?: 'navy' | 'gold' | 'bad' | 'good' }) {
   const chip = tone === 'gold' ? 'bg-cap/15 text-[hsl(42_60%_32%)]' : tone === 'bad' ? 'bg-destructive/10 text-destructive' : tone === 'good' ? 'bg-success/10 text-success' : 'bg-accent text-primary';
   return (
-    <div className="panel p-5">
-      <div className="flex items-center gap-3">
+    <div className="panel p-4 sm:p-5 flex sm:block items-center gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <span className={cn('h-10 w-10 rounded-full grid place-items-center shrink-0', chip)}><Icon className="h-[18px] w-[18px]" /></span>
-        <span className="text-[15px] text-muted-foreground">{label}</span>
+        <div className="min-w-0">
+          <span className="block text-[14px] sm:text-[15px] text-muted-foreground">{label}</span>
+          {note && <span className="block sm:hidden text-[12px] text-muted-foreground">{note}</span>}
+        </div>
       </div>
-      <div className="mt-4 font-display text-[26px] font-semibold tracking-tight">{children}</div>
-      {note && <div className="mt-1 text-[13px] text-muted-foreground">{note}</div>}
+      <div className="sm:mt-4 font-display text-[20px] sm:text-[26px] font-semibold tracking-tight whitespace-nowrap">{children}</div>
+      {note && <div className="hidden sm:block mt-1 text-[13px] text-muted-foreground">{note}</div>}
     </div>
   );
 }
+
+const greeting = (t: (a: string, e: string) => string) => {
+  const h = new Date().getHours();
+  return h < 12 ? t('صباح الخير', 'Good morning') : t('مساء الخير', 'Good evening');
+};
+const todayLabel = (d: string, lang: string) => {
+  const dt = new Date((d || new Date().toISOString()).slice(0, 10) + 'T00:00:00Z');
+  return dt.toLocaleDateString(lang === 'ar' ? 'ar-KW-u-nu-latn' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+};
 
 export default function Dashboard({ session }: { session: Session }) {
   const { t, lang } = useLang();
@@ -38,23 +50,22 @@ export default function Dashboard({ session }: { session: Session }) {
   const over = s.forecast > s.totalBudget;
   const gap = Math.abs(s.totalBudget - s.forecast);
   const free = s.remaining;
-  const trend = (s.trend ?? []).map((p) => ({ m: shortMonth(p.month, lang), v: p.amount }));
+  const trend0 = (s.trend ?? []).map((p) => ({ m: shortMonth(p.month, lang), v: p.amount }));
+  const trend = lang === 'ar' ? [...trend0].reverse() : trend0;   /* RTL: newest month on the left edge reads right-to-left */
 
   return (
     <div>
       <PageHead
-        title={t('الرئيسية', 'Home')}
-        sub={t(`وضع ميزانية ${s.club} اليوم.`, `Where ${s.clubEn}'s budget stands today.`)}
-        action={session.role === 'manager'
-          ? <Link href="/payroll" data-testid="link-payroll" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 active:scale-[.98] transition"><Banknote className="h-4 w-4" />{t('صرف رواتب الشهر', 'Pay this month\'s salaries')}</Link>
-          : <ReadOnlyNote />}
+        title={greeting(t)}
+        sub={`${todayLabel(s.today, lang)}، ${t(`وضع ميزانية ${s.club} اليوم.`, `where ${s.clubEn}'s budget stands today.`)}`}
+        action={session.role === 'manager' ? undefined : <ReadOnlyNote />}
       />
 
       <div className="space-y-5 md:space-y-6">
         {/* Balance card: the one bold moment, like a bank card */}
         <section data-testid="card-summary"
           className="relative overflow-hidden rounded-[24px] p-6 md:p-9 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#24467d_0%,#14284B_48%,#0c1a33_100%)]">
-          <div aria-hidden className="pointer-events-none absolute -bottom-24 -start-24 h-72 w-72 rounded-full border-[28px] border-white/[.04]" />
+          <img aria-hidden src={clubCrest()} alt="" className="pointer-events-none absolute -bottom-16 -start-10 h-72 w-72 object-contain opacity-[.08] grayscale brightness-[3]" />
           <div className="relative">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -75,7 +86,23 @@ export default function Dashboard({ session }: { session: Session }) {
           </div>
         </section>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        {session.role === 'manager' && (
+          <nav aria-label={t('إجراءات سريعة', 'Quick actions')} className="grid grid-cols-3 gap-3">
+            {[
+              { href: '/transactions?new=1', icon: Receipt, ar: 'تسجيل مصروف', en: 'Record expense', id: 'expense' },
+              { href: '/contracts?new=1', icon: UserPlus, ar: 'إضافة عقد', en: 'Add contract', id: 'contract' },
+              { href: '/payroll', icon: Banknote, ar: 'صرف الرواتب', en: 'Run payroll', id: 'payroll' },
+            ].map((a) => (
+              <Link key={a.id} href={a.href} data-testid={`link-quick-${a.id}`}
+                className="panel flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 min-h-[76px] text-center sm:text-start hover:shadow-lg hover:-translate-y-px active:translate-y-0 transition">
+                <span className="h-10 w-10 rounded-full bg-accent text-primary grid place-items-center shrink-0"><a.icon className="h-[18px] w-[18px]" /></span>
+                <span className="text-[13px] sm:text-[15px] font-semibold leading-tight">{t(a.ar, a.en)}</span>
+              </Link>
+            ))}
+          </nav>
+        )}
+
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-3">
           <div data-testid="text-kpi-spent"><Tile icon={ArrowDownLeft} label={t('انصرف لين الحين', 'Spent so far')}><Money v={s.spent} /></Tile></div>
           <div data-testid="text-kpi-committed"><Tile icon={CalendarClock} label={t('محجوز للرواتب', 'Reserved for salaries')} tone="gold"><Money v={s.committed} /></Tile></div>
           <div data-testid="card-forecast">
@@ -105,7 +132,7 @@ export default function Dashboard({ session }: { session: Session }) {
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} stroke="hsl(220 20% 92%)" />
-                    <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: 'hsl(218 12% 42%)' }} reversed={lang === 'ar'} />
+                    <XAxis dataKey="m" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: 'hsl(218 12% 42%)' }} interval="preserveStartEnd" />
                     <YAxis tickLine={false} axisLine={false} width={44} tick={{ fontSize: 12, fill: 'hsl(218 12% 42%)' }} orientation={lang === 'ar' ? 'right' : 'left'}
                       tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
                     <Tooltip cursor={{ stroke: 'hsl(220 16% 85%)' }} formatter={(v: number) => [`${kwd(v, false)} ${lang === 'ar' ? 'د.ك' : 'KWD'}`, t('الصرف', 'Spent')]}

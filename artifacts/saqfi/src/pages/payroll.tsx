@@ -72,7 +72,7 @@ export default function Payroll({ session }: { session: Session }) {
         {month && due.length > 0 && (
           <div className="mt-6 flex items-center">
             <div className="flex -space-x-2 rtl:space-x-reverse">
-              {due.slice(0, 8).map((c) => <Avatar key={c.id} name={c.nameEn || c.name} size={36} className="ring-2 ring-[#14284B]" />)}
+              {due.slice(0, 8).map((c) => <Avatar key={c.id} name={lang === 'ar' ? c.name : c.nameEn} size={36} className="ring-2 ring-[#14284B]" />)}
             </div>
             {due.length > 8 && <span className="ms-3 text-[13px] text-white/70">+{due.length - 8}</span>}
           </div>
@@ -86,7 +86,7 @@ export default function Payroll({ session }: { session: Session }) {
           <ul className="grid sm:grid-cols-2 gap-x-8 divide-y divide-border sm:divide-y-0">
             {due.map((c) => (
               <li key={c.id} className="flex items-center gap-3 py-3 sm:border-b sm:border-border">
-                <Avatar name={c.nameEn || c.name} size={36} />
+                <Avatar name={lang === 'ar' ? c.name : c.nameEn} size={36} />
                 <span className="flex-1 truncate">{lang === 'ar' ? c.name : c.nameEn}</span>
                 <Money v={c.salary} exact className="font-display font-semibold" />
               </li>
