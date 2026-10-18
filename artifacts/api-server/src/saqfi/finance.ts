@@ -1,4 +1,5 @@
 import { ClubError, type Club, type Contract, type PayrollLine } from "./types";
+import { marketSeed } from "./seed";
 
 /** Club policy: pending fines for one player may not exceed half of a monthly salary. */
 export const FINE_LIMIT = 0.5;
@@ -89,6 +90,12 @@ export function normalize(club: Club): Club {
   club.adjustments ??= []; club.matches ??= []; club.requests ??= []; club.audit ??= [];
   club.bonusRules ??= { win: 150, draw: 50 };
   club.approvalThreshold ??= 5000;
+  club.market ??= marketSeed(); club.payments ??= []; club.wallet ??= [];
+  // Seasons saved before the transfer market get a Transfers category funded on top of the old budget.
+  if (!club.categories.some(c => c.id === "transfers")) {
+    club.categories.push({ id: "transfers", name: "الانتقالات", nameEn: "Transfers", cap: 100000 });
+    club.totalBudget = kwd(fils(club.totalBudget) + fils(100000));
+  }
   return club;
 }
 export function snapshot(club: Club, mode: "demo" | "database", today: string) {
@@ -142,5 +149,9 @@ export function snapshot(club: Club, mode: "demo" | "database", today: string) {
     forecast: kwd(Math.round(fils(spent) / elapsed * seasonMonths.length)),
     monthlyPayroll: kwd(club.contracts.filter(c => contractMonths(club, c).includes(currentMonth)).reduce((s, c) => s + fils(c.salary), 0)),
     nextPayrollMonth, today,
+    market: [...club.market].sort((a, b) => (a.status === b.status ? b.fee - a.fee : a.status === "available" ? -1 : 1)),
+    payments: [...club.payments].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(({ sessionId: _s, ...p }) => p),
+    wallet: { balance: 0, totalHeld: kwd(club.wallet.reduce((s, w) => s + fils(w.amount), 0)),
+      entries: [] as Club["wallet"] },
   };
 }

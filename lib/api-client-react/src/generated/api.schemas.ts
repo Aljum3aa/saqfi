@@ -139,6 +139,14 @@ export const ClubStateMode = {
   database: 'database',
 } as const;
 
+export type ClubStateGateway = typeof ClubStateGateway[keyof typeof ClubStateGateway];
+
+
+export const ClubStateGateway = {
+  stripe: 'stripe',
+  sandbox: 'sandbox',
+} as const;
+
 export type AdjustmentKind = typeof AdjustmentKind[keyof typeof AdjustmentKind];
 
 
@@ -247,6 +255,96 @@ export interface Insight {
   tone: InsightTone;
 }
 
+export type ListingStatus = typeof ListingStatus[keyof typeof ListingStatus];
+
+
+export const ListingStatus = {
+  available: 'available',
+  sold: 'sold',
+} as const;
+
+export interface Listing {
+  id: string;
+  name: string;
+  nameEn: string;
+  position: string;
+  age: number;
+  nationality: string;
+  nationalityEn: string;
+  fromClub: string;
+  fromClubEn: string;
+  fee: number;
+  salary: number;
+  status: ListingStatus;
+  soldAt?: string;
+}
+
+export type PaymentKind = typeof PaymentKind[keyof typeof PaymentKind];
+
+
+export const PaymentKind = {
+  payroll: 'payroll',
+  transfer: 'transfer',
+} as const;
+
+export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
+
+
+export const PaymentStatus = {
+  pending: 'pending',
+  paid: 'paid',
+  cancelled: 'cancelled',
+  failed: 'failed',
+} as const;
+
+export type PaymentProvider = typeof PaymentProvider[keyof typeof PaymentProvider];
+
+
+export const PaymentProvider = {
+  stripe: 'stripe',
+  sandbox: 'sandbox',
+} as const;
+
+export interface Payment {
+  id: string;
+  kind: PaymentKind;
+  ref: string;
+  description: string;
+  descriptionEn: string;
+  amount: number;
+  status: PaymentStatus;
+  provider: PaymentProvider;
+  createdAt: string;
+  paidAt?: string;
+  chargeAmount: number;
+  chargeCurrency: string;
+  reference?: string;
+}
+
+export type WalletEntryKind = typeof WalletEntryKind[keyof typeof WalletEntryKind];
+
+
+export const WalletEntryKind = {
+  salary: 'salary',
+  withdrawal: 'withdrawal',
+} as const;
+
+export interface WalletEntry {
+  id: string;
+  playerId: string;
+  date: string;
+  amount: number;
+  kind: WalletEntryKind;
+  description: string;
+  descriptionEn: string;
+}
+
+export interface Wallet {
+  balance: number;
+  totalHeld: number;
+  entries: WalletEntry[];
+}
+
 export interface ClubState {
   club: string;
   clubEn: string;
@@ -276,6 +374,10 @@ export interface ClubState {
   pendingBonuses: number;
   pendingFines: number;
   insights: Insight[];
+  market: Listing[];
+  payments: Payment[];
+  wallet: Wallet;
+  gateway: ClubStateGateway;
 }
 
 export type AdjustmentInputKind = typeof AdjustmentInputKind[keyof typeof AdjustmentInputKind];
@@ -364,5 +466,46 @@ export interface Rates {
   updated: string;
   source: string;
   rates: RatesRates;
+}
+
+export type CheckoutInputKind = typeof CheckoutInputKind[keyof typeof CheckoutInputKind];
+
+
+export const CheckoutInputKind = {
+  payroll: 'payroll',
+  transfer: 'transfer',
+} as const;
+
+export interface CheckoutInput {
+  kind: CheckoutInputKind;
+  month?: string;
+  listingId?: string;
+  returnUrl: string;
+}
+
+export type CheckoutResultProvider = typeof CheckoutResultProvider[keyof typeof CheckoutResultProvider];
+
+
+export const CheckoutResultProvider = {
+  stripe: 'stripe',
+  sandbox: 'sandbox',
+} as const;
+
+export interface CheckoutResult {
+  paymentId: string;
+  provider: CheckoutResultProvider;
+  url?: string;
+  amount: number;
+  chargeAmount: number;
+  chargeCurrency: string;
+}
+
+export interface ConfirmInput {
+  sessionId?: string;
+}
+
+export interface WithdrawInput {
+  /** @exclusiveMinimum 0 */
+  amount: number;
 }
 

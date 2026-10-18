@@ -226,6 +226,66 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Rates"}
+  /saqfi/payments/checkout:
+    post:
+      operationId: startCheckout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CheckoutInput"}
+      responses:
+        "201":
+          description: Payment created; open url (Stripe) or confirm in the sandbox
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CheckoutResult"}
+  /saqfi/payments/{id}/confirm:
+    post:
+      operationId: confirmPayment
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ConfirmInput"}
+      responses:
+        "200":
+          description: Payment verified and applied
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/payments/{id}/cancel:
+    post:
+      operationId: cancelPayment
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ConfirmInput"}
+      responses:
+        "200":
+          description: Payment cancelled
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/wallet/withdraw:
+    post:
+      operationId: withdrawWallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WithdrawInput"}
+      responses:
+        "201":
+          description: Withdrawal recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
 components:
   schemas:
     HealthStatus:
@@ -355,7 +415,7 @@ components:
         amount: {type: number}
     ClubState:
       type: object
-      required: [club, clubEn, seasonStart, seasonEnd, totalBudget, mode, categories, contracts, payrolls, transactions, alerts, trend, spent, committed, remaining, forecast, monthlyPayroll, nextPayrollMonth, today, adjustments, matches, bonusRules, approvalThreshold, requests, audit, pendingBonuses, pendingFines, insights]
+      required: [club, clubEn, seasonStart, seasonEnd, totalBudget, mode, categories, contracts, payrolls, transactions, alerts, trend, spent, committed, remaining, forecast, monthlyPayroll, nextPayrollMonth, today, adjustments, matches, bonusRules, approvalThreshold, requests, audit, pendingBonuses, pendingFines, insights, market, payments, wallet, gateway]
       properties:
         club: {type: string}
         clubEn: {type: string}
@@ -385,6 +445,10 @@ components:
         pendingBonuses: {type: number}
         pendingFines: {type: number}
         insights: {type: array, items: {$ref: "#/components/schemas/Insight"}}
+        market: {type: array, items: {$ref: "#/components/schemas/Listing"}}
+        payments: {type: array, items: {$ref: "#/components/schemas/Payment"}}
+        wallet: {$ref: "#/components/schemas/Wallet"}
+        gateway: {type: string, enum: [stripe, sandbox]}
     Adjustment:
       type: object
       required: [id, playerId, kind, amount, reason, date]
@@ -507,3 +571,83 @@ components:
         updated: {type: string}
         source: {type: string}
         rates: {type: object, additionalProperties: {type: number}}
+
+    Listing:
+      type: object
+      required: [id, name, nameEn, position, age, nationality, nationalityEn, fromClub, fromClubEn, fee, salary, status]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        nameEn: {type: string}
+        position: {type: string}
+        age: {type: integer}
+        nationality: {type: string}
+        nationalityEn: {type: string}
+        fromClub: {type: string}
+        fromClubEn: {type: string}
+        fee: {type: number}
+        salary: {type: number}
+        status: {type: string, enum: [available, sold]}
+        soldAt: {type: string}
+    Payment:
+      type: object
+      required: [id, kind, ref, description, descriptionEn, amount, status, provider, createdAt, chargeAmount, chargeCurrency]
+      properties:
+        id: {type: string}
+        kind: {type: string, enum: [payroll, transfer]}
+        ref: {type: string}
+        description: {type: string}
+        descriptionEn: {type: string}
+        amount: {type: number}
+        status: {type: string, enum: [pending, paid, cancelled, failed]}
+        provider: {type: string, enum: [stripe, sandbox]}
+        createdAt: {type: string}
+        paidAt: {type: string}
+        chargeAmount: {type: number}
+        chargeCurrency: {type: string}
+        reference: {type: string}
+    WalletEntry:
+      type: object
+      required: [id, playerId, date, amount, kind, description, descriptionEn]
+      properties:
+        id: {type: string}
+        playerId: {type: string}
+        date: {type: string}
+        amount: {type: number}
+        kind: {type: string, enum: [salary, withdrawal]}
+        description: {type: string}
+        descriptionEn: {type: string}
+    Wallet:
+      type: object
+      required: [balance, entries, totalHeld]
+      properties:
+        balance: {type: number}
+        totalHeld: {type: number}
+        entries: {type: array, items: {$ref: "#/components/schemas/WalletEntry"}}
+    CheckoutInput:
+      type: object
+      required: [kind, returnUrl]
+      properties:
+        kind: {type: string, enum: [payroll, transfer]}
+        month: {type: string}
+        listingId: {type: string}
+        returnUrl: {type: string}
+    CheckoutResult:
+      type: object
+      required: [paymentId, provider, amount, chargeAmount, chargeCurrency]
+      properties:
+        paymentId: {type: string}
+        provider: {type: string, enum: [stripe, sandbox]}
+        url: {type: string}
+        amount: {type: number}
+        chargeAmount: {type: number}
+        chargeCurrency: {type: string}
+    ConfirmInput:
+      type: object
+      properties:
+        sessionId: {type: string}
+    WithdrawInput:
+      type: object
+      required: [amount]
+      properties:
+        amount: {type: number, exclusiveMinimum: 0}

@@ -4,6 +4,7 @@ import { monthLabel, monthsInclusive, posLabel, dateLabel } from '@/lib/saqfi';
 import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, clubCrest, clubKit } from '@/components/shell';
 import { Avatar, Chip, SectionTitle } from '@/components/kit';
 import { cn } from '@/lib/utils';
+import { WalletCard } from '@/components/wallet';
 
 export default function PlayerHome({ session }: { session: Session }) {
   const { t, lang } = useLang();
@@ -50,6 +51,7 @@ export default function PlayerHome({ session }: { session: Session }) {
           </section>
         );
       })}
+      <WalletCard wallet={s.wallet} />
       {s.adjustments.some((a) => !a.settledMonth) && (
         <section className="panel p-5 md:p-7 mb-6" data-testid="card-own-pending">
           <SectionTitle aside={t('مع راتبك الجاي', 'With your next salary')}>{t('مكافآت وغرامات', 'Bonuses & fines')}</SectionTitle>

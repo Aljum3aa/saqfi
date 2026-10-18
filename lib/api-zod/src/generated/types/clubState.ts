@@ -10,13 +10,17 @@ import type { ApprovalRequest } from './approvalRequest';
 import type { AuditEntry } from './auditEntry';
 import type { BonusRules } from './bonusRules';
 import type { Category } from './category';
+import type { ClubStateGateway } from './clubStateGateway';
 import type { ClubStateMode } from './clubStateMode';
 import type { Contract } from './contract';
 import type { Insight } from './insight';
+import type { Listing } from './listing';
 import type { Match } from './match';
+import type { Payment } from './payment';
 import type { Payroll } from './payroll';
 import type { Transaction } from './transaction';
 import type { Trend } from './trend';
+import type { Wallet } from './wallet';
 
 export interface ClubState {
   club: string;
@@ -47,4 +51,8 @@ export interface ClubState {
   pendingBonuses: number;
   pendingFines: number;
   insights: Insight[];
+  market: Listing[];
+  payments: Payment[];
+  wallet: Wallet;
+  gateway: ClubStateGateway;
 }

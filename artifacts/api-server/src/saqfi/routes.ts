@@ -4,11 +4,12 @@ import cookieParser from "cookie-parser";
 import {
   LoginDemoBody, SaveBudgetBody, CreateContractBody, CreateExpenseBody, RunPayrollBody,
   CreateMatchBody, CreateAdjustmentBody, SaveBonusRulesBody, SaveApprovalThresholdBody,
-  CreateRequestBody, DecideRequestBody, AskAdvisorBody,
+  CreateRequestBody, DecideRequestBody, AskAdvisorBody, StartCheckoutBody, ConfirmPaymentBody, WithdrawWalletBody,
 } from "@workspace/api-zod";
 import { ClubError, type Role, type Contract, type Club } from "./types";
 import { dataMode, mutateClub, readClub } from "./store";
-import { contractMonths, fils, kwd, money, snapshot, validDate, payrollLines, pending, categories, FINE_LIMIT } from "./finance";
+import { contractMonths, fils, kwd, money, snapshot, validDate, payrollLines, pending, categories, enforce, FINE_LIMIT } from "./finance";
+import { provider, assertNotLive, chargeQuote, createCheckout, verifyCheckout } from "./gateway";
 import { advise, insights } from "./advisor";
 import { getRates, toKwd } from "./fx";
 
@@ -66,7 +67,7 @@ function log(club: Club, req: Request, action: string, detail: string, detailEn:
 }
 function fullState(club: Club) {
   const state = snapshot(club, dataMode, today());
-  return { ...state, insights: insights(state) };
+  return { ...state, insights: insights(state), gateway: provider() };
 }
 function checkExpense(club: Club, input: { categoryId: string; date: string }) {
   if (!club.categories.some(c => c.id === input.categoryId))
@@ -128,7 +129,9 @@ saqfiRouter.get("/state", async (req, res) => {
         const lines = p.lines.filter(l => l.playerId === ownId);
         return { ...p, lines, total: kwd(lines.reduce((s, l) => s + fils(l.net), 0)) };
       }).filter(p => p.lines.length > 0),
-      transactions: [],
+      transactions: [], market: [], payments: [],
+      wallet: (() => { const entries = club.wallet.filter(w => w.playerId === ownId).sort((a, b) => b.date.localeCompare(a.date));
+        return { balance: kwd(entries.reduce((s, w) => s + fils(w.amount), 0)), totalHeld: 0, entries }; })(),
     });
     return;
   }
@@ -191,6 +194,21 @@ saqfiRouter.post("/requests/:id/decision", only("president"), async (req, res) =
   res.json({ message });
 });
 
+saqfiRouter.post("/wallet/withdraw", only("player"), async (req, res) => {
+  const { amount } = WithdrawWalletBody.parse(req.body);
+  money(amount);
+  const ownId = "player-1";
+  await mutateClub(club => {
+    const balance = club.wallet.filter(w => w.playerId === ownId).reduce((s, w) => s + fils(w.amount), 0);
+    if (fils(amount) > balance)
+      throw new ClubError(400, `الرصيد ما يكفي (المتاح ${fmt(kwd(balance))} د.ك)`, `Insufficient balance (available KWD ${fmt(kwd(balance))}).`);
+    club.wallet.push({ id: randomUUID(), playerId: ownId, date: new Date().toISOString(), amount: -amount, kind: "withdrawal",
+      description: "تحويل إلى الحساب البنكي (تجريبي)", descriptionEn: "Transfer to bank account (test)" });
+    log(club, req, "withdraw", `سحب ${fmt(amount)} د.ك من محفظة اللاعب`, `Player withdrew KWD ${fmt(amount)} from wallet`);
+  });
+  res.status(201).json({ message: "انرسل التحويل لحسابك البنكي (تجريبي)" });
+});
+
 saqfiRouter.use(only("manager"));
 saqfiRouter.put("/budget", async (req, res) => {
   const input = SaveBudgetBody.parse(req.body);
@@ -200,7 +218,7 @@ saqfiRouter.put("/budget", async (req, res) => {
     const ids = input.categories.map(c => c.id);
     if (ids.length !== club.categories.length || new Set(ids).size !== ids.length ||
         club.categories.some(c => !ids.includes(c.id)))
-      throw new ClubError(400, "أرسل سقوف الفئات الخمس دون تكرار", "Provide all five category caps without duplicates.");
+      throw new ClubError(400, "أرسل سقوف كل البنود دون تكرار", "Provide every category cap without duplicates.");
     club.totalBudget = input.total;
     club.categories = club.categories.map(c => ({ ...c, cap: input.categories.find(v => v.id === c.id)!.cap }));
     log(club, req, "budget", `تعديل الميزانية: ${fmt(input.total)} د.ك`, `Budget edited: KWD ${fmt(input.total)}`);
@@ -330,7 +348,13 @@ saqfiRouter.post("/payroll", async (req, res) => {
   const { month } = RunPayrollBody.parse(req.body);
   if (Number(month.slice(5)) < 1 || Number(month.slice(5)) > 12)
     throw new ClubError(400, "الشهر غير صالح", "Invalid month.");
-  await mutateClub(club => {
+  await mutateClub(club => { payrollEffect(club, req, month); });
+  res.status(201).json({ message: "تم تسجيل الرواتب محاسبيًا؛ لم يحدث أي تحويل بنكي" });
+});
+
+/** Record a month's payroll; when it was paid through the gateway, each net salary lands in the player's wallet. */
+function payrollEffect(club: Club, req: Request, month: string, paid?: { paymentId: string }) {
+  {
     if (club.payrolls.some(p => p.month === month))
       throw new ClubError(409, "تم تسجيل رواتب هذا الشهر مسبقًا؛ لا يمكن صرفها مرتين", "This month has already been paid. Duplicate payroll is not allowed.");
     if (month > today().slice(0, 7))
@@ -348,9 +372,115 @@ saqfiRouter.post("/payroll", async (req, res) => {
       id: randomUUID(), categoryId: "players", amount: total,
       description: `رواتب اللاعبين — ${month}`, date: today(), type: "payroll",
     });
-    log(club, req, "payroll", `صرف رواتب ${month}: ${fmt(total)} د.ك`, `Ran payroll for ${month}: KWD ${fmt(total)}`);
+    if (paid) for (const l of lines) if (fils(l.net) > 0) club.wallet.push({ id: randomUUID(), playerId: l.playerId, date: paidAt, amount: l.net,
+      kind: "salary", description: `راتب ${month}`, descriptionEn: `Salary ${month}` });
+    log(club, req, "payroll", `صرف رواتب ${month}: ${fmt(total)} د.ك${paid ? " عبر بوابة الدفع" : ""}`, `Ran payroll for ${month}: KWD ${fmt(total)}${paid ? " via the payment gateway" : ""}`);
+    return total;
+  }
+}
+
+/** Sign a market player: transfer fee booked under Transfers, salary reserved from the remaining season. */
+function transferEffect(club: Club, req: Request, listingId: string) {
+  const l = club.market.find(x => x.id === listingId);
+  if (!l) throw new ClubError(404, "اللاعب مو موجود في السوق", "Player not on the market.");
+  if (l.status !== "available") throw new ClubError(409, "اللاعب انباع", "This player has already been signed.");
+  const lastPaid = club.payrolls.map(p => p.month).sort().at(-1) ?? "";
+  const nextAfter = (m: string) => { const [y, mo] = m.split("-").map(Number); return mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, "0")}`; };
+  let startMonth = today().slice(0, 7);
+  if (lastPaid && startMonth <= lastPaid) startMonth = nextAfter(lastPaid);
+  if (`${startMonth}-01` > club.seasonEnd) throw new ClubError(400, "الموسم خلص، ما يمدي توقّع", "The season is over; no signings possible.");
+  const contract: Contract = { id: `signed-${l.id}`, name: l.name, nameEn: l.nameEn, position: l.position, salary: l.salary,
+    start: `${startMonth}-01`, end: club.seasonEnd };
+  club.contracts.push(contract);
+  club.transactions.push({ id: randomUUID(), categoryId: "transfers", amount: l.fee, description: `رسوم انتقال: ${l.name}`, date: today(), type: "transfer" });
+  l.status = "sold"; l.soldAt = new Date().toISOString();
+  log(club, req, "transfer", `تعاقد مع ${l.name} من ${l.fromClub}: رسوم ${fmt(l.fee)} د.ك وراتب ${fmt(l.salary)} د.ك`,
+    `Signed ${l.nameEn} from ${l.fromClubEn}: fee KWD ${fmt(l.fee)}, salary KWD ${fmt(l.salary)}`);
+}
+
+function origin(req: Request) {
+  const proto = String(req.headers["x-forwarded-proto"] ?? req.protocol).split(",")[0].trim();
+  const host = String(req.headers["x-forwarded-host"] ?? req.headers.host ?? "").split(",")[0].trim();
+  return `${proto}://${host}`;
+}
+
+saqfiRouter.post("/payments/checkout", async (req, res) => {
+  assertNotLive();
+  const input = StartCheckoutBody.parse(req.body);
+  let ret: URL;
+  try { ret = new URL(input.returnUrl); } catch { throw new ClubError(400, "رابط الرجوع غير صالح", "Invalid return URL."); }
+  if (ret.origin !== origin(req) && ret.origin !== String(req.headers.origin ?? ""))
+    throw new ClubError(400, "رابط الرجوع لازم يكون من نفس التطبيق", "Return URL must be on this app.");
+  const back = `${ret.origin}${ret.pathname}`;
+
+  // Dry run on a copy: caps and rules are checked BEFORE anyone is charged.
+  const club = await readClub();
+  const draft = structuredClone(club);
+  let amount = 0, description = "", descriptionEn = "", ref = "";
+  if (input.kind === "payroll") {
+    const month = input.month ?? "";
+    if (!/^\d{4}-\d{2}$/.test(month)) throw new ClubError(400, "الشهر غير صالح", "Invalid month.");
+    amount = payrollEffect(draft, req, month)!;
+    description = `رواتب اللاعبين — ${month}`; descriptionEn = `Player salaries — ${month}`; ref = month;
+  } else {
+    const l = club.market.find(x => x.id === input.listingId);
+    transferEffect(draft, req, input.listingId ?? "");
+    amount = l!.fee; ref = l!.id;
+    description = `رسوم انتقال ${l!.name}`; descriptionEn = `Transfer fee — ${l!.nameEn}`;
+  }
+  enforce(draft);
+  if (club.payments.some(p => p.status === "pending" && p.kind === input.kind && p.ref === ref)) {
+    /* an older unfinished attempt is simply replaced */
+  }
+  const prov = provider();
+  const quote = await chargeQuote(amount);
+  const id = randomUUID();
+  let url: string | undefined, sessionId: string | undefined;
+  if (prov === "stripe") {
+    const s = await createCheckout({ paymentId: id, name: `${descriptionEn} (Saqfi)`, chargeAmount: quote.chargeAmount,
+      successUrl: `${back}?pay=${id}&session_id={CHECKOUT_SESSION_ID}`, cancelUrl: `${back}?pay=${id}&cancelled=1` });
+    url = s.url; sessionId = s.id;
+  }
+  await mutateClub(c => {
+    for (const p of c.payments) if (p.status === "pending" && p.kind === input.kind && p.ref === ref) p.status = "cancelled";
+    c.payments.push({ id, kind: input.kind, ref, description, descriptionEn, amount, status: "pending", provider: prov,
+      createdAt: new Date().toISOString(), ...quote, sessionId });
   });
-  res.status(201).json({ message: "تم تسجيل الرواتب محاسبيًا؛ لم يحدث أي تحويل بنكي" });
+  res.status(201).json({ paymentId: id, provider: prov, url, amount, ...quote });
+});
+
+saqfiRouter.post("/payments/:id/confirm", async (req, res) => {
+  assertNotLive();
+  const { sessionId } = ConfirmPaymentBody.parse(req.body ?? {});
+  const before = (await readClub()).payments.find(p => p.id === req.params.id);
+  if (!before) throw new ClubError(404, "الدفعة غير موجودة", "Payment not found.");
+  if (before.status === "paid") { res.json({ message: "الدفعة مسجلة من قبل" }); return; }
+  if (before.status !== "pending") throw new ClubError(409, "الدفعة ملغاة", "This payment was cancelled.");
+  let reference = `sandbox-${before.id.slice(0, 8)}`;
+  if (before.provider === "stripe") {
+    if (!sessionId || sessionId !== before.sessionId) throw new ClubError(400, "مرجع الدفع غير مطابق", "Payment reference does not match.");
+    reference = (await verifyCheckout(sessionId, before.id, before.chargeAmount)).reference;
+  }
+  let message = "";
+  await mutateClub(club => {
+    const p = club.payments.find(x => x.id === before.id)!;
+    if (p.status === "paid") { message = "الدفعة مسجلة من قبل"; return; }
+    if (p.kind === "payroll") { payrollEffect(club, req, p.ref, { paymentId: p.id }); message = `انصرفت رواتب ${p.ref} ونزلت في محافظ اللاعبين`; }
+    else { transferEffect(club, req, p.ref); message = "تم التعاقد ودُفعت رسوم الانتقال"; }
+    p.status = "paid"; p.paidAt = new Date().toISOString(); p.reference = reference;
+    log(club, req, "payment", `دفعة ناجحة عبر ${p.provider === "stripe" ? "Stripe" : "البوابة التجريبية"}: ${p.description} ${fmt(p.amount)} د.ك`,
+      `Payment captured via ${p.provider}: ${p.descriptionEn} KWD ${fmt(p.amount)}`);
+  });
+  res.json({ message });
+});
+
+saqfiRouter.post("/payments/:id/cancel", async (req, res) => {
+  await mutateClub(club => {
+    const p = club.payments.find(x => x.id === req.params.id);
+    if (!p) throw new ClubError(404, "الدفعة غير موجودة", "Payment not found.");
+    if (p.status === "pending") p.status = "cancelled";
+  });
+  res.json({ message: "انلغت عملية الدفع، وما انخصم شي" });
 });
 saqfiRouter.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof ClubError) {

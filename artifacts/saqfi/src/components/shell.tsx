@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { AdvisorDialog } from '@/components/advisor';
+import { PayProvider } from '@/components/pay';
 
 /** The Saqfi mark: a gold cap line with three budget bars under it, none crossing it (Gemini concept, redrawn as vector). */
 export function Mark({ size = 34, tile = true, onDark = false }: { size?: number; tile?: boolean; onDark?: boolean }) {
@@ -67,11 +68,13 @@ export const SECTIONS: Section[] = [
   { id: 'money', ar: 'الميزانية', en: 'Budget', icon: Wallet, subs: [
     { href: '/budget', ar: 'البنود', en: 'Categories' },
     { href: '/transactions', ar: 'المصاريف', en: 'Expenses' },
+    { href: '/payments', ar: 'المدفوعات', en: 'Payments' },
   ] },
   { id: 'team', ar: 'الفريق', en: 'Squad', icon: Users, subs: [
     { href: '/contracts', ar: 'العقود', en: 'Contracts' },
     { href: '/payroll', ar: 'الرواتب', en: 'Payroll' },
     { href: '/bonuses', ar: 'المكافآت والغرامات', en: 'Bonuses & fines' },
+    { href: '/market', ar: 'سوق الانتقالات', en: 'Transfer market' },
   ] },
   { id: 'approvals', ar: 'الموافقات', en: 'Approvals', icon: ShieldCheck, subs: [
     { href: '/approvals', ar: 'الطلبات', en: 'Requests' },
@@ -159,6 +162,7 @@ export function Shell({ session, children }: { session: Session; children: React
   const Collapse = (lang === 'ar') !== collapsed ? PanelRightClose : PanelRightOpen;
 
   return (
+    <PayProvider>
     <div className="min-h-[100dvh] lg:flex">
       {!isPlayer && (
         <aside className={cn('hidden lg:flex lg:flex-col shrink-0 sticky top-0 h-[100dvh] bg-[#0A2B20] text-white py-5 transition-[width] duration-200 ease-out',
@@ -267,6 +271,7 @@ export function Shell({ session, children }: { session: Session; children: React
       )}
       <AdvisorDialog open={advisor} onOpenChange={setAdvisor} />
     </div>
+    </PayProvider>
   );
 }
 

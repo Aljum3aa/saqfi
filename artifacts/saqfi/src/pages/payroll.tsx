@@ -1,32 +1,24 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, Banknote, CheckCircle2 } from 'lucide-react';
-import { useRunPayroll, getGetClubStateQueryKey, type Session } from '@workspace/api-client-react';
+import type { Session } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
-import { apiErr, kwdText, monthLabel, ym, dateLabel, type ApiErr } from '@/lib/saqfi';
+import { kwdText, monthLabel, ym, dateLabel, type ApiErr } from '@/lib/saqfi';
+import { usePay, GatewayNote } from '@/components/pay';
 import { useClub, PageHead, Money, PageSkeleton, ErrorPanel, ReadOnlyNote, ErrorBox } from '@/components/shell';
 import { Avatar, Chip, SectionTitle } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 export default function Payroll({ session }: { session: Session }) {
   const { t, lang } = useLang();
   const q = useClub();
-  const qc = useQueryClient();
-  const { toast } = useToast();
+  const { pay, busy } = usePay();
   const [confirm, setConfirm] = useState(false);
   const [openRun, setOpenRun] = useState<string | null>(null);
   const [err, setErr] = useState<ApiErr | null>(null);
-  const run = useRunPayroll({
-    mutation: {
-      onSuccess: (m) => { setConfirm(false); qc.invalidateQueries({ queryKey: getGetClubStateQueryKey() }); toast({ title: t('تم صرف رواتب الشهر', 'Salaries paid for the month'), description: lang === 'ar' ? m.message : undefined }); },
-      onError: (e) => { setConfirm(false); setErr(apiErr(e, lang)); },
-    },
-  });
   if (q.isLoading) return <PageSkeleton />;
   if (q.isError || !q.data) return <ErrorPanel onRetry={() => q.refetch()} />;
   const s = q.data;
@@ -40,7 +32,12 @@ export default function Payroll({ session }: { session: Session }) {
   const history = [...s.payrolls].sort((a, b) => b.month.localeCompare(a.month));
   const notYet = !!month && month > s.today.slice(0, 7);
   const name = (id: string, fallback: string) => s.contracts.find((c) => c.id === id)?.[lang === 'ar' ? 'name' : 'nameEn'] ?? fallback;
-  const canRun = !!month && !run.isPending && due.length > 0 && !notYet;
+  const canRun = !!month && !busy && due.length > 0 && !notYet;
+  const runPay = async () => {
+    setConfirm(false);
+    const r = await pay({ kind: 'payroll', month }, t(`انصرفت رواتب ${monthLabel(month, lang)}`, `${monthLabel(month, lang)} salaries paid`));
+    if (!r.ok && r.error) setErr(r.error);
+  };
   const RunBtn = ({ big = false }: { big?: boolean }) => (
     <Button disabled={!canRun} data-testid={big ? 'button-run-payroll' : 'button-run-payroll-head'} onClick={() => { setErr(null); setConfirm(true); }}
       className={cn('rounded-full px-6', big ? 'h-12 bg-white text-primary hover:bg-white/90 font-semibold' : 'h-12')}>
@@ -154,14 +151,15 @@ export default function Payroll({ session }: { session: Session }) {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('صرف رواتب ', 'Pay salaries for ')}{monthLabel(month, lang)}</AlertDialogTitle>
             <AlertDialogDescription className="text-[15px]">
-              {t(`بيتسجّل ${due.length} راتب بمجموع ${kwdText(dueTotal, lang)} كمصروف. قيد محاسبي بس بدون تحويل بنكي، وما يتكرر لنفس الشهر.`,
-                `${due.length} salaries totalling ${kwdText(dueTotal, lang)} will be recorded as spent. Accounting entry only, no bank transfer, and it can't repeat for the same month.`)}
+              {t(`بتدفع ${kwdText(dueTotal, lang)} لـ ${due.length} لاعب، وكل راتب ينزل في محفظة صاحبه. ما يتكرر لنفس الشهر.`,
+                `You will pay ${kwdText(dueTotal, lang)} to ${due.length} players; each salary lands in the player's wallet. It can't repeat for the same month.`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <GatewayNote provider={s.gateway} />
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel className="rounded-full">{t('إلغاء', 'Cancel')}</AlertDialogCancel>
-            <AlertDialogAction className="rounded-full" data-testid="button-confirm-payroll" disabled={run.isPending} onClick={(e) => { e.preventDefault(); run.mutate({ data: { month } }); }}>
-              {run.isPending ? t('جاري الصرف…', 'Paying…') : t('تأكيد الصرف', 'Confirm payment')}
+            <AlertDialogAction className="rounded-full" data-testid="button-confirm-payroll" disabled={busy} onClick={(e) => { e.preventDefault(); runPay(); }}>
+              {busy ? t('جاري الدفع…', 'Paying…') : t('ادفع الرواتب', 'Pay salaries')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

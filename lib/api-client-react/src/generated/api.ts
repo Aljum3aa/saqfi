@@ -24,7 +24,10 @@ import type {
   AdvisorInput,
   BonusRules,
   BudgetInput,
+  CheckoutInput,
+  CheckoutResult,
   ClubState,
+  ConfirmInput,
   ContractInput,
   DecisionInput,
   DemoInput,
@@ -35,7 +38,8 @@ import type {
   PayrollInput,
   Rates,
   Session,
-  ThresholdInput
+  ThresholdInput,
+  WithdrawInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1469,4 +1473,334 @@ export function useGetRates<TData = Awaited<ReturnType<typeof getRates>>, TError
 
 
 
+
+export const getStartCheckoutUrl = () => {
+
+
+
+
+  return `/api/saqfi/payments/checkout`
+}
+
+export const startCheckout = async (checkoutInput: CheckoutInput, options?: Parameters<typeof customFetch>[1]): Promise<CheckoutResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CheckoutResult>(getStartCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(checkoutInput)
+  }
+);}
+
+
+
+
+
+export const getStartCheckoutMutationKey = () => ['startCheckout'] as const;
+
+export const getStartCheckoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCheckout>>, TError,StartCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startCheckout>>, TError,StartCheckoutMutationVariables, TContext> => {
+
+const mutationKey = getStartCheckoutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startCheckout>>, StartCheckoutMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  startCheckout(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof startCheckout>>>
+    export type StartCheckoutMutationBody = BodyType<CheckoutInput>
+    export type StartCheckoutMutationError = ErrorType<unknown>
+    export type StartCheckoutMutationVariables = {data: BodyType<CheckoutInput>}
+
+    export const useStartCheckout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startCheckout>>, TError,StartCheckoutMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startCheckout>>,
+        TError,
+        StartCheckoutMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStartCheckoutMutationOptions(options));
+    }
+
+export const getConfirmPaymentUrl = (id: string,) => {
+
+
+
+
+  return `/api/saqfi/payments/${id}/confirm`
+}
+
+export const confirmPayment = async (id: string,
+    confirmInput: ConfirmInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getConfirmPaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(confirmInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmPaymentMutationKey = () => ['confirmPayment'] as const;
+
+export const getConfirmPaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPayment>>, TError,ConfirmPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPayment>>, TError,ConfirmPaymentMutationVariables, TContext> => {
+
+const mutationKey = getConfirmPaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPayment>>, ConfirmPaymentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  confirmPayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPayment>>>
+    export type ConfirmPaymentMutationBody = BodyType<ConfirmInput>
+    export type ConfirmPaymentMutationError = ErrorType<unknown>
+    export type ConfirmPaymentMutationVariables = {id: string;data: BodyType<ConfirmInput>}
+
+    export const useConfirmPayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPayment>>, TError,ConfirmPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmPayment>>,
+        TError,
+        ConfirmPaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmPaymentMutationOptions(options));
+    }
+
+export const getCancelPaymentUrl = (id: string,) => {
+
+
+
+
+  return `/api/saqfi/payments/${id}/cancel`
+}
+
+export const cancelPayment = async (id: string,
+    confirmInput: ConfirmInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getCancelPaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(confirmInput)
+  }
+);}
+
+
+
+
+
+export const getCancelPaymentMutationKey = () => ['cancelPayment'] as const;
+
+export const getCancelPaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelPayment>>, TError,CancelPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelPayment>>, TError,CancelPaymentMutationVariables, TContext> => {
+
+const mutationKey = getCancelPaymentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelPayment>>, CancelPaymentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  cancelPayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof cancelPayment>>>
+    export type CancelPaymentMutationBody = BodyType<ConfirmInput>
+    export type CancelPaymentMutationError = ErrorType<unknown>
+    export type CancelPaymentMutationVariables = {id: string;data: BodyType<ConfirmInput>}
+
+    export const useCancelPayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelPayment>>, TError,CancelPaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelPayment>>,
+        TError,
+        CancelPaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCancelPaymentMutationOptions(options));
+    }
+
+export const getWithdrawWalletUrl = () => {
+
+
+
+
+  return `/api/saqfi/wallet/withdraw`
+}
+
+export const withdrawWallet = async (withdrawInput: WithdrawInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Message>(getWithdrawWalletUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(withdrawInput)
+  }
+);}
+
+
+
+
+
+export const getWithdrawWalletMutationKey = () => ['withdrawWallet'] as const;
+
+export const getWithdrawWalletMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawWallet>>, TError,WithdrawWalletMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof withdrawWallet>>, TError,WithdrawWalletMutationVariables, TContext> => {
+
+const mutationKey = getWithdrawWalletMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof withdrawWallet>>, WithdrawWalletMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  withdrawWallet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type WithdrawWalletMutationResult = NonNullable<Awaited<ReturnType<typeof withdrawWallet>>>
+    export type WithdrawWalletMutationBody = BodyType<WithdrawInput>
+    export type WithdrawWalletMutationError = ErrorType<unknown>
+    export type WithdrawWalletMutationVariables = {data: BodyType<WithdrawInput>}
+
+    export const useWithdrawWallet = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawWallet>>, TError,WithdrawWalletMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof withdrawWallet>>,
+        TError,
+        WithdrawWalletMutationVariables,
+        TContext
+      > => {
+      return useMutation(getWithdrawWalletMutationOptions(options));
+    }
 

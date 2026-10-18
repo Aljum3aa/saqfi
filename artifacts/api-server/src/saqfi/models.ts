@@ -30,5 +30,6 @@ const seasonSchema = new Schema({
   // Newer collections are plain sub-documents; shapes are validated in the API layer.
   adjustments: [Schema.Types.Mixed], matches: [Schema.Types.Mixed], requests: [Schema.Types.Mixed],
   audit: [Schema.Types.Mixed], bonusRules: Schema.Types.Mixed, approvalThreshold: Number,
+  market: [Schema.Types.Mixed], payments: [Schema.Types.Mixed], wallet: [Schema.Types.Mixed],
 }, { versionKey: false });
 export const Season = mongoose.model("SaqfiSeason", seasonSchema);

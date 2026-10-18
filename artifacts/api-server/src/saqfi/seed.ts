@@ -1,5 +1,22 @@
-import type { Adjustment, Club, Match, Payroll } from "./types";
+import type { Adjustment, Club, Listing, Match, Payroll } from "./types";
 import { fils, kwd, payrollLines } from "./finance";
+
+/** Fictional players on the market. Fees and salaries are KWD; salary is monthly. */
+export function marketSeed(): Listing[] {
+  const rows: [string, string, string, number, string, string, string, string, number, number][] = [
+    ["فيصل الرفاعي", "Faisal Al-Refaei", "وسط", 24, "الكويت", "Kuwait", "نادي الوادي", "Al-Wadi", 18000, 900],
+    ["لوكاس ميندز", "Lucas Mendes", "مهاجم", 27, "البرازيل", "Brazil", "إي سي باهيا", "EC Bahia", 42000, 2400],
+    ["عمر الشطي", "Omar Al-Shatti", "مدافع", 22, "الكويت", "Kuwait", "نادي النجوم", "Al-Nujoom", 12000, 700],
+    ["يوسف بن علي", "Youssef Ben Ali", "جناح", 25, "تونس", "Tunisia", "النادي الصفاقسي", "CS Sfaxien", 26000, 1300],
+    ["سالم العجمي", "Salem Al-Ajmi", "حارس مرمى", 29, "الكويت", "Kuwait", "نادي الشروق", "Al-Shorouq", 9000, 650],
+    ["كريم ديالو", "Karim Diallo", "وسط", 26, "السنغال", "Senegal", "جينيراسيون فوت", "Generation Foot", 31000, 1600],
+    ["مشاري الهاجري", "Meshari Al-Hajri", "مدافع", 23, "الكويت", "Kuwait", "نادي البحّارة", "Al-Bahhara", 15000, 800],
+    ["أندريه سيلفا", "Andre Silva", "مهاجم", 30, "البرتغال", "Portugal", "إف سي فيزيلا", "FC Vizela", 38000, 2200],
+  ];
+  return rows.map(([name, nameEn, position, age, nationality, nationalityEn, fromClub, fromClubEn, fee, salary], i) => ({
+    id: `listing-${i + 1}`, name, nameEn, position, age, nationality, nationalityEn, fromClub, fromClubEn, fee, salary, status: "available" as const,
+  }));
+}
 
 export function seedClub(): Club {
   const names = [
@@ -58,13 +75,14 @@ export function seedClub(): Club {
   const club: Club = {
     id: "saqfi-demo-club", revision: 0,
     club: "نادي الصقور", clubEn: "Al-Suqoor FC",
-    seasonStart: "2026-07-01", seasonEnd: "2027-06-30", totalBudget: 400000,
+    seasonStart: "2026-07-01", seasonEnd: "2027-06-30", totalBudget: 500000,
     categories: [
       { id: "players", name: "رواتب اللاعبين", nameEn: "Player salaries", cap: 260000 },
       { id: "staff", name: "الجهاز الفني", nameEn: "Technical staff", cap: 60000 },
       { id: "travel", name: "السفر والمعسكرات", nameEn: "Travel & camps", cap: 40000 },
       { id: "equipment", name: "الأطقم والمعدات", nameEn: "Kits & equipment", cap: 25000 },
       { id: "reserve", name: "الاحتياطي", nameEn: "Reserve", cap: 15000 },
+      { id: "transfers", name: "الانتقالات", nameEn: "Transfers", cap: 100000 },
     ],
     contracts, payrolls: [], adjustments, matches, bonusRules, approvalThreshold: 5000,
     transactions: [
@@ -83,7 +101,7 @@ export function seedClub(): Club {
       status: "pending", reason: "threshold", requestedAt: "2026-10-15T09:30:00.000Z",
       currency: "QAR", originalAmount: 106650, rate: 11.85,
     }],
-    audit: [],
+    audit: [], market: marketSeed(), payments: [], wallet: [],
   };
   // Run the seeded months through the same payroll logic the API uses.
   for (const month of ["2026-07", "2026-08", "2026-09"]) {

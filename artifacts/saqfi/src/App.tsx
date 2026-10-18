@@ -19,6 +19,8 @@ import PlayerHome from '@/pages/player';
 import Bonuses from '@/pages/bonuses';
 import Approvals from '@/pages/approvals';
 import Audit from '@/pages/audit';
+import Market from '@/pages/market';
+import Payments from '@/pages/payments';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
 
@@ -54,6 +56,8 @@ function Router({ session }: { session: Session }) {
         <Route path="/bonuses">{() => <Bonuses session={session} />}</Route>
         <Route path="/approvals">{() => <Approvals session={session} />}</Route>
         <Route path="/audit">{() => <Audit session={session} />}</Route>
+        <Route path="/market">{() => <Market session={session} />}</Route>
+        <Route path="/payments">{() => <Payments session={session} />}</Route>
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

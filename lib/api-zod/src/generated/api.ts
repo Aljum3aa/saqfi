@@ -181,7 +181,51 @@ export const GetClubStateResponse = zod.object({
   "message": zod.string(),
   "messageEn": zod.string(),
   "tone": zod.enum(['good', 'warn', 'bad'])
+})),
+  "market": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "nameEn": zod.string(),
+  "position": zod.string(),
+  "age": zod.number().int(),
+  "nationality": zod.string(),
+  "nationalityEn": zod.string(),
+  "fromClub": zod.string(),
+  "fromClubEn": zod.string(),
+  "fee": zod.number(),
+  "salary": zod.number(),
+  "status": zod.enum(['available', 'sold']),
+  "soldAt": zod.string().optional()
+})),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['payroll', 'transfer']),
+  "ref": zod.string(),
+  "description": zod.string(),
+  "descriptionEn": zod.string(),
+  "amount": zod.number(),
+  "status": zod.enum(['pending', 'paid', 'cancelled', 'failed']),
+  "provider": zod.enum(['stripe', 'sandbox']),
+  "createdAt": zod.string(),
+  "paidAt": zod.string().optional(),
+  "chargeAmount": zod.number(),
+  "chargeCurrency": zod.string(),
+  "reference": zod.string().optional()
+})),
+  "wallet": zod.object({
+  "balance": zod.number(),
+  "totalHeld": zod.number(),
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "playerId": zod.string(),
+  "date": zod.string(),
+  "amount": zod.number(),
+  "kind": zod.enum(['salary', 'withdrawal']),
+  "description": zod.string(),
+  "descriptionEn": zod.string()
 }))
+}),
+  "gateway": zod.enum(['stripe', 'sandbox'])
 })
 
 
@@ -405,6 +449,65 @@ export const GetRatesResponse = zod.object({
   "updated": zod.string(),
   "source": zod.string(),
   "rates": zod.record(zod.string(), zod.number())
+})
+
+
+export const StartCheckoutBody = zod.object({
+  "kind": zod.enum(['payroll', 'transfer']),
+  "month": zod.string().optional(),
+  "listingId": zod.string().optional(),
+  "returnUrl": zod.string()
+})
+
+export const StartCheckoutResponse = zod.object({
+  "paymentId": zod.string(),
+  "provider": zod.enum(['stripe', 'sandbox']),
+  "url": zod.string().optional(),
+  "amount": zod.number(),
+  "chargeAmount": zod.number(),
+  "chargeCurrency": zod.string()
+})
+
+
+export const ConfirmPaymentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ConfirmPaymentBody = zod.object({
+  "sessionId": zod.string().optional()
+})
+
+export const ConfirmPaymentResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const CancelPaymentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CancelPaymentBody = zod.object({
+  "sessionId": zod.string().optional()
+})
+
+export const CancelPaymentResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const withdrawWalletBodyAmountExclusiveMin = 0;
+
+
+
+export const WithdrawWalletBody = zod.object({
+  "amount": zod.number().gt(withdrawWalletBodyAmountExclusiveMin)
+})
+
+export const WithdrawWalletResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
 })
 
 
