@@ -80,10 +80,6 @@ export default function Login() {
         </div>
         <div className="relative">
           <h1 className="font-display text-[48px] xl:text-[56px] font-semibold leading-[1.2] tracking-tight max-w-lg">{t('ولا دينار فوق السقف.', 'Not one dinar over the cap.')}</h1>
-          <p className="mt-5 text-[17px] leading-[1.8] text-white/75 max-w-md">
-            {t('ميزانية النادي ورواتب اللاعبين بمكان واحد. أي صرف يتعدى سقف البند ينرفض قبل لا يصير.',
-              'Your club budget and player salaries in one place. Any spend that would break a category cap is stopped before it happens.')}
-          </p>
           <div className="mt-10"><CapPreview /></div>
         </div>
         <div className="relative text-[13px] text-white/55">{t('جميع المبالغ بالدينار الكويتي', 'All amounts in Kuwaiti dinar')}</div>
@@ -98,7 +94,6 @@ export default function Login() {
             <LangToggle className="text-white/85 hover:bg-white/10" />
           </div>
           <h1 className="relative mt-7 font-display text-[30px] font-semibold leading-[1.3]">{t('ولا دينار فوق السقف.', 'Not one dinar over the cap.')}</h1>
-          <p className="relative mt-2 text-[15px] leading-[1.7] text-white/75">{t('ميزانية النادي ورواتب اللاعبين بمكان واحد.', 'Club budget and player salaries in one place.')}</p>
           <div className="relative mt-6">{club}</div>
         </div>
 
@@ -107,7 +102,6 @@ export default function Login() {
             <div className="hidden lg:flex justify-end mb-10"><LangToggle /></div>
             <span className="inline-flex items-center rounded-full bg-accent text-primary text-[12px] font-semibold px-3 py-1">{t('نسخة تجريبية', 'Demo')}</span>
             <h2 className="mt-3 font-display text-[26px] font-semibold tracking-tight">{t('تسجيل الدخول', 'Sign in')}</h2>
-            <p className="mt-1.5 text-[15px] text-muted-foreground leading-relaxed">{t('اختار الدور اللي تبي تجربه، وكل دور يشوف الصلاحيات الخاصة فيه.', 'Pick a role to try. Each role sees only what it is allowed to.')}</p>
 
             <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm divide-y divide-border overflow-hidden">
               {roles.map((x) => {

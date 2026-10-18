@@ -88,7 +88,7 @@ export default function Bonuses({ session }: { session: Session }) {
           <div className="text-[13px] text-muted-foreground">{t('مكافأة التعادل لكل لاعب', 'Draw bonus per player')}</div>
           <Money v={s.bonusRules.draw} className="font-display text-[22px] font-semibold" />
         </div>
-        <p className="text-[14px] text-muted-foreground flex-1 min-w-[200px]">{t('تنحسب للاعبين اللي في قائمة المباراة بس. الخسارة ما لها مكافأة.', 'Only for players in the match-day squad. A loss has no bonus.')}</p>
+        <span className="flex-1" />
         {isManager && <Button variant="ghost" className="rounded-full h-11" onClick={() => setRulesOpen(true)} data-testid="button-edit-rules"><Pencil className="h-4 w-4" />{t('تعديل', 'Edit')}</Button>}
       </section>
 

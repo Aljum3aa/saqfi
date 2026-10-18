@@ -71,11 +71,11 @@ export const roleLabel = (r: string, t: (a: string, e: string) => string) =>
 function Brand({ s, dark = false }: { s?: ClubState; dark?: boolean }) {
   const { t } = useLang();
   return (
-    <Link href="/dashboard" className="flex items-center gap-3 min-h-11" data-testid="link-home">
-      <Mark size={36} onDark={dark} />
+    <Link href="/dashboard" className="flex items-center gap-3 min-h-11 min-w-0" data-testid="link-home">
+      <img src={clubCrest()} alt="" className={cn('object-contain shrink-0', dark ? 'h-11 w-11' : 'h-9 w-9')} />
       <div className="leading-tight min-w-0">
-        <div className="font-display font-semibold text-[19px]">{t('سقفي', 'Saqfi')}</div>
-        <div className={cn('text-[13px] truncate max-[359px]:hidden', dark ? 'text-white/60' : 'text-muted-foreground')}>{s && !dark ? t(s.club, s.clubEn) : t('ولا دينار فوق السقف', 'Not one dinar over the cap')}</div>
+        <div className="font-display font-semibold text-[17px] truncate">{s ? t(s.club, s.clubEn) : ''}</div>
+        <div className={cn('text-[12px] truncate', dark ? 'text-white/60' : 'text-muted-foreground')}>{s ? <>{t('موسم ', 'Season ')}<span className="num">{seasonLabel(s)}</span></> : ''}</div>
       </div>
     </Link>
   );
@@ -115,15 +115,6 @@ export function Shell({ session, children }: { session: Session; children: React
       {!isPlayer && (
         <aside className="hidden lg:flex lg:flex-col w-[268px] shrink-0 sticky top-0 h-[100dvh] bg-[#0B3F3C] text-white px-4 py-6">
           <div className="px-2"><Brand s={s} dark /></div>
-          {s && (
-            <div className="mt-6 flex items-center gap-3 rounded-2xl bg-white/[.06] p-3" data-testid="card-club">
-              <img src={clubCrest()} alt="" className="h-11 w-11 object-contain shrink-0" />
-              <div className="min-w-0">
-                <div className="font-semibold truncate">{t(s.club, s.clubEn)}</div>
-                <div className="text-[12px] text-white/60">{t('موسم ', 'Season ')}<span className="num">{seasonLabel(s)}</span></div>
-              </div>
-            </div>
-          )}
           <nav className="mt-6 flex flex-col gap-0.5" aria-label={t('الأقسام', 'Sections')}>
             {NAV.map((n) => {
               const Icon = n.icon;
@@ -214,7 +205,7 @@ export function Shell({ session, children }: { session: Session; children: React
         <SheetContent side="bottom" className="rounded-t-[24px] pb-[calc(env(safe-area-inset-bottom)+20px)]">
           <SheetHeader className="text-start rtl:pr-10 ltr:pr-10">
             <SheetTitle>{t('المزيد', 'More')}</SheetTitle>
-            <SheetDescription>{s ? t(s.club, s.clubEn) : ''}</SheetDescription>
+            <SheetDescription className="sr-only">{t('أقسام إضافية', 'More sections')}</SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-2 gap-3 mt-5">
             {NAV.filter((n) => !n.tab).map((n) => {
@@ -245,7 +236,6 @@ export function PageHead({ title, sub, action }: { title: string; sub?: string; 
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
       <div>
         <h1 className="font-display text-[28px] md:text-[36px] font-semibold leading-tight tracking-tight">{title}</h1>
-        {sub && <p className="text-muted-foreground mt-1.5 max-w-2xl">{sub}</p>}
       </div>
       {action && <div className="shrink-0 [&>*]:w-full sm:[&>*]:w-auto">{action}</div>}
     </div>

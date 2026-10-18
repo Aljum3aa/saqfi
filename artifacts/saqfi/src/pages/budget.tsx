@@ -70,7 +70,6 @@ function BudgetCards({ s }: { s: ClubState }) {
           );
         })}
       </div>
-      <p className="text-[13px] text-muted-foreground">{t('المتاح فعلاً = السقف ناقص اللي انصرف والمحجوز للرواتب.', 'Truly available = cap minus spent and reserved salaries.')}</p>
     </div>
   );
 }
@@ -122,8 +121,7 @@ function BudgetEditor({ s, onDone }: { s: ClubState; onDone: () => void }) {
 
   return (
     <div className="panel p-5 md:p-8">
-      <h2 className="text-xl font-semibold mb-1">{t('تعديل الميزانية', 'Edit budget')}</h2>
-      <p className="text-muted-foreground mb-6">{t('مجموع البنود لازم يساوي الميزانية، وما تقدر تنزّل بند تحت اللي انصرف وانحجز منه.', 'Categories must add up to the budget, and none can go below what is spent plus reserved.')}</p>
+      <h2 className="text-xl font-semibold mb-6">{t('تعديل الميزانية', 'Edit budget')}</h2>
       <div className="max-w-xs">
         <Field id="input-total" label={t('ميزانية الموسم (د.ك)', 'Season budget (KWD)')}>
           <Input id="input-total" data-testid="input-total" inputMode="decimal" value={total} onChange={(e) => setTotal(e.target.value)} className="num text-end h-11" />

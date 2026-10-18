@@ -80,7 +80,6 @@ export default function PlayerHome({ session }: { session: Session }) {
             ))}
           </ul>
         )}
-        <p className="text-[13px] text-muted-foreground mt-4">{t('هذي قيود محاسبية، مو إشعارات تحويل بنكي.', 'These are accounting entries, not bank transfer receipts.')}</p>
       </section>
     </div>
   );
