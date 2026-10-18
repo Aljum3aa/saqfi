@@ -3,8 +3,7 @@ import { cn } from '@/lib/utils';
 
 /** Shared visual kit for Saqfi pages: avatars, stat strip, chips, list rows. Presentation only. */
 
-/* players wear the club kit: teal shirt, white initials, white collar ring */
-const AV_TONES = ['bg-[#0F5F5A] text-white ring-2 ring-white shadow-[0_0_0_3.5px_#0F5F5A40]'];
+import kitUrl from '@assets/kit_1792268676116.webp';
 
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -18,14 +17,14 @@ export function initials(name: string) {
   return (a + b).toUpperCase();
 }
 
+/** A player is shown wearing the club shirt, on a soft plate so it reads on light and dark cards. */
 export function Avatar({ name, size = 40, className }: { name: string; size?: number; className?: string }) {
-  let h = 0;
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return (
-    <span aria-hidden
-      className={cn('inline-grid place-items-center rounded-full font-semibold shrink-0 select-none', AV_TONES[h % AV_TONES.length], className)}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.36) }}>
-      {initials(name)}
+    <span aria-hidden title={name}
+      className={cn('inline-grid place-items-center rounded-full shrink-0 select-none bg-[#E6F1EF] ring-1 ring-[#0F5F5A]/10', className)}
+      style={{ width: size, height: size }}>
+      <img src={kitUrl} alt="" draggable={false} loading="lazy"
+        className="object-contain drop-shadow-[0_1px_1px_rgba(8,48,46,.25)]" style={{ width: size * 0.78, height: size * 0.78 }} />
     </span>
   );
 }

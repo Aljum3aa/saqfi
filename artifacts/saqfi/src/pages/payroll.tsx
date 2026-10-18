@@ -78,7 +78,7 @@ export default function Payroll({ session }: { session: Session }) {
         {month && due.length > 0 && (
           <div className="mt-6 flex items-center">
             <div className="flex -space-x-2 rtl:space-x-reverse">
-              {due.slice(0, 8).map((c) => <Avatar key={c.id} name={lang === 'ar' ? c.name : c.nameEn} size={36} className="ring-2 ring-[#0F5F5A] bg-[#2A7F78] shadow-none" />)}
+              {due.slice(0, 8).map((c) => <Avatar key={c.id} name={lang === 'ar' ? c.name : c.nameEn} size={36} className="ring-2 ring-[#0F5F5A]" />)}
             </div>
             {due.length > 8 && <span className="ms-3 text-[13px] text-white/70">+{due.length - 8}</span>}
           </div>
