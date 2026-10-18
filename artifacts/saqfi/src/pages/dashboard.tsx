@@ -65,7 +65,7 @@ export default function Dashboard({ session }: { session: Session }) {
       <div className="space-y-5 md:space-y-6">
         {/* Balance card: the one bold moment, like a bank card */}
         <section data-testid="card-summary"
-          className="relative overflow-hidden rounded-[24px] p-6 md:p-9 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#24467d_0%,#14284B_48%,#0c1a33_100%)]">
+          className="relative overflow-hidden rounded-[24px] p-6 md:p-9 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#2A7F78_0%,#0F5F5A_48%,#08302E_100%)]">
           <img aria-hidden src={clubCrest()} alt="" className="pointer-events-none absolute -bottom-16 -start-10 h-72 w-72 object-contain opacity-[.08] grayscale brightness-[3]" />
           <div className="relative">
             <div className="flex items-start justify-between gap-4">
@@ -145,8 +145,8 @@ export default function Dashboard({ session }: { session: Session }) {
                   <AreaChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="sq-area" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#14284B" stopOpacity={0.22} />
-                        <stop offset="100%" stopColor="#14284B" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#0F5F5A" stopOpacity={0.22} />
+                        <stop offset="100%" stopColor="#0F5F5A" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} stroke="hsl(220 20% 92%)" />
@@ -155,7 +155,7 @@ export default function Dashboard({ session }: { session: Session }) {
                       tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
                     <Tooltip cursor={{ stroke: 'hsl(220 16% 85%)' }} formatter={(v: number) => [`${kwd(v, false)} ${lang === 'ar' ? 'د.ك' : 'KWD'}`, t('الصرف', 'Spent')]}
                       contentStyle={{ borderRadius: 12, border: '1px solid hsl(220 16% 90%)', boxShadow: '0 8px 24px hsl(218 40% 20% / .08)', fontFamily: 'inherit' }} />
-                    <Area type="monotone" dataKey="v" stroke="#14284B" strokeWidth={2.5} fill="url(#sq-area)" dot={{ r: 3, fill: '#14284B' }} activeDot={{ r: 5 }} />
+                    <Area type="monotone" dataKey="v" stroke="#0F5F5A" strokeWidth={2.5} fill="url(#sq-area)" dot={{ r: 3, fill: '#0F5F5A' }} activeDot={{ r: 5 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>

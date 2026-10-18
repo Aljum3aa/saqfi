@@ -92,7 +92,7 @@ function MonthlyChart({ s }: { s: ClubState }) {
                 tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
               <Tooltip cursor={{ fill: 'hsl(218 40% 95%)', radius: 8 }} contentStyle={{ background: '#fff', border: '1px solid hsl(220 16% 90%)', borderRadius: 12, fontSize: 14, fontFamily: 'inherit', boxShadow: '0 8px 24px hsl(218 40% 20% / .08)' }}
                 formatter={(v: number) => [`${kwd(v)} ${t('د.ك', 'KWD')}`, t('المصروف', 'Spent')]} />
-              <Bar dataKey="amount" fill="#14284B" radius={[10, 10, 4, 4]} maxBarSize={40} />
+              <Bar dataKey="amount" fill="#0F5F5A" radius={[10, 10, 4, 4]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </div>

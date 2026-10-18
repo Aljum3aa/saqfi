@@ -107,8 +107,10 @@ export function ruleAnswer(question: string, s: State): Answer {
  * The model only sees aggregate figures, never acts, and falls back to the rule engine on any error.
  */
 export async function advise(question: string, s: State, lang: "ar" | "en"): Promise<Answer> {
-  const base = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? (process.env.OPENAI_API_KEY ? "https://api.openai.com/v1" : "");
-  const key = process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? "";
+  // OpenRouter has free models, so the advisor works without paid credits (key in OPENROUTER_API_KEY).
+  const openrouter = !process.env.AI_INTEGRATIONS_OPENAI_API_KEY && !process.env.OPENAI_API_KEY && !!process.env.OPENROUTER_API_KEY;
+  const base = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? (process.env.OPENAI_API_KEY ? "https://api.openai.com/v1" : openrouter ? "https://openrouter.ai/api/v1" : "");
+  const key = process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY ?? "";
   if (!base || !key) return ruleAnswer(question, s);
   const facts = {
     club: s.clubEn, season: `${s.seasonStart}..${s.seasonEnd}`, today: s.today, totalBudget: s.totalBudget,
@@ -122,7 +124,7 @@ export async function advise(question: string, s: State, lang: "ar" | "en"): Pro
       method: "POST", signal: AbortSignal.timeout(20000),
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: process.env.SAQFI_AI_MODEL ?? "gpt-4o-mini", temperature: 0.2, max_tokens: 400,
+        model: process.env.SAQFI_AI_MODEL ?? (openrouter ? "openrouter/free" : "gpt-4o-mini"), temperature: 0.2, max_tokens: 400,
         messages: [
           { role: "system", content: "You are Saqfi's finance advisor for a football club. Answer only from the JSON facts. Amounts are KWD. Be short and concrete (max 4 sentences). You give advice only and never claim to have changed anything. " +
             (lang === "ar" ? "Reply in Kuwaiti Arabic." : "Reply in English.") },

@@ -24,7 +24,7 @@ export default function PlayerHome({ session }: { session: Session }) {
         const paidPct = c.totalCost > 0 ? Math.min(100, ((c.totalCost - c.outstanding) / c.totalCost) * 100) : 0;
         return (
           <section key={c.id} data-testid={`card-own-contract-${c.id}`}
-            className="relative overflow-hidden rounded-[24px] p-6 md:p-8 mb-6 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#24467d_0%,#14284B_48%,#0c1a33_100%)]">
+            className="relative overflow-hidden rounded-[24px] p-6 md:p-8 mb-6 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#2A7F78_0%,#0F5F5A_48%,#08302E_100%)]">
             <img aria-hidden src={clubKit()} alt="" className="pointer-events-none absolute -end-8 top-6 h-56 w-56 object-contain opacity-95 hidden sm:block drop-shadow-2xl" />
             <div className="relative flex items-center gap-4">
               <Avatar name={lang === 'ar' ? c.name : c.nameEn} size={52} className="ring-2 ring-white/20" />

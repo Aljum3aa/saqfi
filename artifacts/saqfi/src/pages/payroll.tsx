@@ -57,7 +57,7 @@ export default function Payroll({ session }: { session: Session }) {
       {err && <div className="mb-6"><ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('صرف الرواتب', 'Payroll')} /></div>}
 
       {/* Next run: the page's one bold card */}
-      <section className="relative overflow-hidden rounded-[24px] p-6 md:p-8 mb-6 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#24467d_0%,#14284B_48%,#0c1a33_100%)]">
+      <section className="relative overflow-hidden rounded-[24px] p-6 md:p-8 mb-6 text-white shadow-xl shadow-primary/20 bg-[radial-gradient(130%_140%_at_100%_0%,#2A7F78_0%,#0F5F5A_48%,#08302E_100%)]">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
             <div className="text-white/70">{t('الشهر الجاي', 'Next month due')}</div>
@@ -78,7 +78,7 @@ export default function Payroll({ session }: { session: Session }) {
         {month && due.length > 0 && (
           <div className="mt-6 flex items-center">
             <div className="flex -space-x-2 rtl:space-x-reverse">
-              {due.slice(0, 8).map((c) => <Avatar key={c.id} name={lang === 'ar' ? c.name : c.nameEn} size={36} className="ring-2 ring-[#14284B]" />)}
+              {due.slice(0, 8).map((c) => <Avatar key={c.id} name={lang === 'ar' ? c.name : c.nameEn} size={36} className="ring-2 ring-[#0F5F5A] bg-[#2A7F78] shadow-none" />)}
             </div>
             {due.length > 8 && <span className="ms-3 text-[13px] text-white/70">+{due.length - 8}</span>}
           </div>

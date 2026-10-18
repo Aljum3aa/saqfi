@@ -90,35 +90,35 @@
   --sidebar: 0 0% 100%;
   --sidebar-foreground: 216 50% 12%;
   --sidebar-border: 220 16% 90%;
-  --sidebar-primary: 218 58% 19%;
+  --sidebar-primary: 176 73% 22%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 218 40% 95%;
-  --sidebar-accent-foreground: 218 58% 19%;
-  --sidebar-ring: 218 58% 19%;
+  --sidebar-accent: 174 38% 94%;
+  --sidebar-accent-foreground: 176 73% 22%;
+  --sidebar-ring: 176 73% 22%;
   --popover: 0 0% 100%;
   --popover-foreground: 216 50% 12%;
   --popover-border: 220 16% 90%;
-  /* brand navy #14284B */
-  --primary: 218 58% 19%;
+  /* club teal #0F5F5A (Al-Suqoor kit) */
+  --primary: 176 73% 22%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 218 40% 95%;
-  --secondary-foreground: 218 58% 19%;
+  --secondary: 174 38% 94%;
+  --secondary-foreground: 176 73% 22%;
   --muted: 220 18% 95%;
-  --muted-foreground: 218 12% 42%;
-  --accent: 218 40% 95%;
-  --accent-foreground: 218 58% 19%;
+  --muted-foreground: 190 10% 40%;
+  --accent: 174 38% 94%;
+  --accent-foreground: 176 73% 22%;
   --destructive: 4 74% 42%;           /* #B42318 */
   --destructive-foreground: 0 0% 100%;
-  --success: 158 59% 30%;             /* #1F7A5A */
+  --success: 128 45% 33%;             /* #2E7A38 */
   --warning: 32 92% 38%;
   --input: 220 14% 82%;
-  --ring: 218 58% 30%;
+  --ring: 176 73% 30%;
   --track: 220 20% 92%;
   /* the cap — gold is used ONLY for the cap line and the logo */
   --cap: 42 54% 54%;                  /* #C9A24A */
-  --chart-1: 218 58% 19%;
-  --chart-2: 218 30% 60%;
-  --chart-3: 158 59% 30%;
+  --chart-1: 176 73% 22%;
+  --chart-2: 176 30% 58%;
+  --chart-3: 128 45% 33%;
   --chart-4: 32 92% 38%;
   --chart-5: 4 74% 42%;
 
@@ -126,14 +126,14 @@
   --app-font-serif: 'IBM Plex Sans Arabic', sans-serif;
   --app-font-mono: 'IBM Plex Sans Arabic', sans-serif;
   --radius: 16px;
-  --shadow-2xs: 0 1px 2px hsl(218 40% 20% / .04);
-  --shadow-xs: 0 1px 2px hsl(218 40% 20% / .05);
-  --shadow-sm: 0 1px 2px hsl(218 40% 20% / .05);
-  --shadow: 0 1px 2px hsl(218 40% 20% / .05);
-  --shadow-md: 0 4px 12px hsl(218 40% 20% / .06);
-  --shadow-lg: 0 8px 24px hsl(218 40% 20% / .08);
-  --shadow-xl: 0 12px 32px hsl(218 40% 20% / .10);
-  --shadow-2xl: 0 16px 40px hsl(218 40% 20% / .12);
+  --shadow-2xs: 0 1px 2px hsl(176 50% 16% / .04);
+  --shadow-xs: 0 1px 2px hsl(176 50% 16% / .05);
+  --shadow-sm: 0 1px 2px hsl(176 50% 16% / .05);
+  --shadow: 0 1px 2px hsl(176 50% 16% / .05);
+  --shadow-md: 0 4px 12px hsl(176 50% 16% / .06);
+  --shadow-lg: 0 8px 24px hsl(176 50% 16% / .08);
+  --shadow-xl: 0 12px 32px hsl(176 50% 16% / .10);
+  --shadow-2xl: 0 16px 40px hsl(176 50% 16% / .12);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   --sidebar-primary-border: hsl(var(--sidebar-primary));
@@ -162,35 +162,35 @@
   --sidebar: 0 0% 100%;
   --sidebar-foreground: 216 50% 12%;
   --sidebar-border: 220 16% 90%;
-  --sidebar-primary: 218 58% 19%;
+  --sidebar-primary: 176 73% 22%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 218 40% 95%;
-  --sidebar-accent-foreground: 218 58% 19%;
-  --sidebar-ring: 218 58% 19%;
+  --sidebar-accent: 174 38% 94%;
+  --sidebar-accent-foreground: 176 73% 22%;
+  --sidebar-ring: 176 73% 22%;
   --popover: 0 0% 100%;
   --popover-foreground: 216 50% 12%;
   --popover-border: 220 16% 90%;
-  /* brand navy #14284B */
-  --primary: 218 58% 19%;
+  /* club teal #0F5F5A (Al-Suqoor kit) */
+  --primary: 176 73% 22%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 218 40% 95%;
-  --secondary-foreground: 218 58% 19%;
+  --secondary: 174 38% 94%;
+  --secondary-foreground: 176 73% 22%;
   --muted: 220 18% 95%;
-  --muted-foreground: 218 12% 42%;
-  --accent: 218 40% 95%;
-  --accent-foreground: 218 58% 19%;
+  --muted-foreground: 190 10% 40%;
+  --accent: 174 38% 94%;
+  --accent-foreground: 176 73% 22%;
   --destructive: 4 74% 42%;           /* #B42318 */
   --destructive-foreground: 0 0% 100%;
-  --success: 158 59% 30%;             /* #1F7A5A */
+  --success: 128 45% 33%;             /* #2E7A38 */
   --warning: 32 92% 38%;
   --input: 220 14% 82%;
-  --ring: 218 58% 30%;
+  --ring: 176 73% 30%;
   --track: 220 20% 92%;
   /* the cap — gold is used ONLY for the cap line and the logo */
   --cap: 42 54% 54%;                  /* #C9A24A */
-  --chart-1: 218 58% 19%;
-  --chart-2: 218 30% 60%;
-  --chart-3: 158 59% 30%;
+  --chart-1: 176 73% 22%;
+  --chart-2: 176 30% 58%;
+  --chart-3: 128 45% 33%;
   --chart-4: 32 92% 38%;
   --chart-5: 4 74% 42%;
 
@@ -198,14 +198,14 @@
   --app-font-serif: 'IBM Plex Sans Arabic', sans-serif;
   --app-font-mono: 'IBM Plex Sans Arabic', sans-serif;
   --radius: 16px;
-  --shadow-2xs: 0 1px 2px hsl(218 40% 20% / .04);
-  --shadow-xs: 0 1px 2px hsl(218 40% 20% / .05);
-  --shadow-sm: 0 1px 2px hsl(218 40% 20% / .05);
-  --shadow: 0 1px 2px hsl(218 40% 20% / .05);
-  --shadow-md: 0 4px 12px hsl(218 40% 20% / .06);
-  --shadow-lg: 0 8px 24px hsl(218 40% 20% / .08);
-  --shadow-xl: 0 12px 32px hsl(218 40% 20% / .10);
-  --shadow-2xl: 0 16px 40px hsl(218 40% 20% / .12);
+  --shadow-2xs: 0 1px 2px hsl(176 50% 16% / .04);
+  --shadow-xs: 0 1px 2px hsl(176 50% 16% / .05);
+  --shadow-sm: 0 1px 2px hsl(176 50% 16% / .05);
+  --shadow: 0 1px 2px hsl(176 50% 16% / .05);
+  --shadow-md: 0 4px 12px hsl(176 50% 16% / .06);
+  --shadow-lg: 0 8px 24px hsl(176 50% 16% / .08);
+  --shadow-xl: 0 12px 32px hsl(176 50% 16% / .10);
+  --shadow-2xl: 0 16px 40px hsl(176 50% 16% / .12);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
   --sidebar-primary-border: hsl(var(--sidebar-primary));
@@ -347,7 +347,7 @@ body{font-size:16px;line-height:1.6;min-height:100dvh;font-weight:400}
   background:hsl(var(--card));
   border:1px solid hsl(220 20% 93%);
   border-radius:20px;
-  box-shadow:0 1px 2px hsl(218 40% 20% / .04), 0 8px 24px hsl(218 40% 20% / .05);
+  box-shadow:0 1px 2px hsl(176 50% 16% / .04), 0 8px 24px hsl(176 50% 16% / .05);
 }
 .font-display{font-family:var(--font-display, 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif)}
 .num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}

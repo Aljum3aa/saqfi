@@ -3,13 +3,8 @@ import { cn } from '@/lib/utils';
 
 /** Shared visual kit for Saqfi pages: avatars, stat strip, chips, list rows. Presentation only. */
 
-const AV_TONES = [
-  'bg-[#E7ECF5] text-[#14284B]',
-  'bg-[#F4ECD8] text-[#7A5A12]',
-  'bg-[#E2F1EA] text-[#1F6B4F]',
-  'bg-[#ECE8F6] text-[#4B3A8C]',
-  'bg-[#F6E6E4] text-[#8C3A2E]',
-];
+/* players wear the club kit: teal shirt, white initials, white collar ring */
+const AV_TONES = ['bg-[#0F5F5A] text-white ring-2 ring-white shadow-[0_0_0_3.5px_#0F5F5A40]'];
 
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);

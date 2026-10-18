@@ -16,10 +16,10 @@ import { AdvisorDialog } from '@/components/advisor';
 
 /** The Saqfi mark: a gold cap line with three budget bars under it, none crossing it (Gemini concept, redrawn as vector). */
 export function Mark({ size = 34, tile = true, onDark = false }: { size?: number; tile?: boolean; onDark?: boolean }) {
-  const bar = tile || onDark ? '#FFFFFF' : '#14284B';
+  const bar = tile || onDark ? '#FFFFFF' : '#0F5F5A';
   return (
     <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden>
-      {tile && !onDark && <rect width="1024" height="1024" rx="232" fill="#14284B" />}
+      {tile && !onDark && <rect width="1024" height="1024" rx="232" fill="#0F5F5A" />}
       {onDark && <rect width="1024" height="1024" rx="232" fill="#FFFFFF" fillOpacity="0.08" />}
       <rect x="256" y="256" width="512" height="54" rx="10" fill="#C9A24A" />
       <rect x="299" y="488" width="113" height="280" rx="10" fill={bar} />
@@ -113,7 +113,7 @@ export function Shell({ session, children }: { session: Session; children: React
     <div className="min-h-[100dvh] lg:flex">
       {/* Desktop: fixed side menu on the start side (right in Arabic) */}
       {!isPlayer && (
-        <aside className="hidden lg:flex lg:flex-col w-[268px] shrink-0 sticky top-0 h-[100dvh] bg-[#0f1f3d] text-white px-4 py-6">
+        <aside className="hidden lg:flex lg:flex-col w-[268px] shrink-0 sticky top-0 h-[100dvh] bg-[#0B3F3C] text-white px-4 py-6">
           <div className="px-2"><Brand s={s} dark /></div>
           {s && (
             <div className="mt-6 flex items-center gap-3 rounded-2xl bg-white/[.06] p-3" data-testid="card-club">
@@ -131,10 +131,10 @@ export function Shell({ session, children }: { session: Session; children: React
               return (
                 <Link key={n.href} href={n.href} data-testid={`link-nav-${n.href.slice(1)}`} aria-current={on ? 'page' : undefined}
                   className={cn('min-h-11 flex items-center gap-3 px-4 rounded-full text-[15px] transition-colors',
-                    on ? 'bg-white text-[#0f1f3d] font-semibold shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white')}>
+                    on ? 'bg-white text-[#0B3F3C] font-semibold shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white')}>
                   <Icon className="h-[18px] w-[18px]" />
                   {t(n.ar, n.en)}
-                  {badge(n.href) > 0 && <span className="ms-auto min-w-6 h-6 px-1.5 rounded-full bg-cap text-[#0f1f3d] text-[12px] font-bold grid place-items-center num" data-testid="badge-approvals">{badge(n.href)}</span>}
+                  {badge(n.href) > 0 && <span className="ms-auto min-w-6 h-6 px-1.5 rounded-full bg-cap text-[#0B3F3C] text-[12px] font-bold grid place-items-center num" data-testid="badge-approvals">{badge(n.href)}</span>}
                 </Link>
               );
             })}
