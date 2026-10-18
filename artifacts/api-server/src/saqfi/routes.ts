@@ -1,5 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { randomBytes, createHash, randomUUID } from "node:crypto";
+import { randomBytes, createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import cookieParser from "cookie-parser";
 import {
   LoginDemoBody, SaveBudgetBody, CreateContractBody, CreateExpenseBody, RunPayrollBody,
@@ -19,13 +19,14 @@ const today = () => new Date().toISOString().slice(0, 10);
 const cookieName = "saqfi_demo";
 const lifetime = 8 * 60 * 60 * 1000;
 type DemoSession = { role: Role; name: string; expires: number };
-const sessions = new Map<string, DemoSession>();
-const digest = (token: string) => createHash("sha256").update(token).digest("hex");
 const roleNames = { manager: "المدير المالي", president: "رئيس النادي", player: "أحمد العتيبي" };
-const purge = setInterval(() => {
-  for (const [key, value] of sessions) if (value.expires < Date.now()) sessions.delete(key);
-}, 60000);
-purge.unref();
+/* Stateless signed session cookie: works when the API runs as several instances (Vercel, Replit autoscale). */
+const sessionKey = createHash("sha256").update(process.env.SESSION_SECRET ?? `saqfi:${process.env.MONGODB_URI ?? "demo"}:${process.env.REPL_ID ?? ""}`).digest();
+const sign = (body: string) => createHmac("sha256", sessionKey).update(body).digest("base64url");
+function issue(role: Role) {
+  const body = Buffer.from(JSON.stringify({ r: role, e: Date.now() + lifetime, n: randomBytes(6).toString("hex") })).toString("base64url");
+  return `${body}.${sign(body)}`;
+}
 saqfiRouter.use(cookieParser());
 saqfiRouter.use((_req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
@@ -40,14 +41,18 @@ saqfiRouter.use((req, _res, next) => {
   }
   next();
 });
-function session(req: Request) {
+function session(req: Request): DemoSession | undefined {
   const token: unknown = req.cookies?.[cookieName];
-  if (typeof token !== "string") return undefined;
-  const key = digest(token);
-  const value = sessions.get(key);
-  if (value && value.expires > Date.now()) return value;
-  sessions.delete(key);
-  return undefined;
+  if (typeof token !== "string" || token.length > 400) return undefined;
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return undefined;
+  const a = Buffer.from(sig), b = Buffer.from(sign(body));
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return undefined;
+  try {
+    const { r, e } = JSON.parse(Buffer.from(body, "base64url").toString()) as { r: Role; e: number };
+    if (!(r in roleNames) || typeof e !== "number" || e < Date.now()) return undefined;
+    return { role: r, name: roleNames[r], expires: e };
+  } catch { return undefined; }
 }
 function requireSession(req: Request, _res: Response, next: NextFunction) {
   if (!session(req)) return next(new ClubError(401, "يرجى تسجيل الدخول", "Please sign in."));
@@ -98,18 +103,12 @@ saqfiRouter.get("/session", (req, res) => {
 });
 saqfiRouter.post("/session", (req, res) => {
   const { role } = LoginDemoBody.parse(req.body);
-  const old = req.cookies?.[cookieName];
-  if (typeof old === "string") sessions.delete(digest(old));
   // These are explicitly public demo identities, not production authentication.
-  if (sessions.size > 2000) throw new ClubError(429, "يرجى المحاولة لاحقًا", "Please retry later.");
-  const token = randomBytes(32).toString("hex");
-  sessions.set(digest(token), { role, name: roleNames[role], expires: Date.now() + lifetime });
+  const token = issue(role);
   res.cookie(cookieName, token, { ...cookieOptions(req), maxAge: lifetime });
   res.json({ authenticated: true, role, name: roleNames[role], demo: true });
 });
 saqfiRouter.delete("/session", (req, res) => {
-  const token = req.cookies?.[cookieName];
-  if (typeof token === "string") sessions.delete(digest(token));
   res.clearCookie(cookieName, cookieOptions(req));
   res.json({ message: "تم تسجيل الخروج" });
 });
