@@ -11,4 +11,6 @@ export type PaymentKind = typeof PaymentKind[keyof typeof PaymentKind];
 export const PaymentKind = {
   payroll: 'payroll',
   transfer: 'transfer',
+  installment: 'installment',
+  invoice: 'invoice',
 } as const;

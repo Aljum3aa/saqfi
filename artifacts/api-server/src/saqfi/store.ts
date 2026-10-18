@@ -49,12 +49,12 @@ export async function mutateClub(action: (club: Club) => void | Promise<void>) {
     }
     const { id, revision: newRevision, club: name, clubEn, seasonStart, seasonEnd,
       totalBudget, categories, contracts, payrolls, transactions,
-      adjustments, matches, bonusRules, approvalThreshold, requests, market, payments, wallet } = club;
+      adjustments, matches, bonusRules, approvalThreshold, requests, market, payments, wallet, invoices, installments, advances } = club;
     const audit = club.audit.slice(-500);
     const result = await Season.updateOne({ id, revision }, {
       $set: { revision: newRevision, club: name, clubEn, seasonStart, seasonEnd, totalBudget,
         categories, contracts, payrolls, transactions,
-        adjustments, matches, bonusRules, approvalThreshold, requests, audit, market, payments, wallet },
+        adjustments, matches, bonusRules, approvalThreshold, requests, audit, market, payments, wallet, invoices, installments, advances },
     }, { runValidators: true });
     if (result.modifiedCount === 1) return;
   }

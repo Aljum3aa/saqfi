@@ -11,12 +11,16 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
+/** First of three installments (same split as the server: whole fils, remainder on the first). */
+const firstPart = (fee: number) => { const f = Math.round(fee * 1000), b = Math.floor(f / 3); return (f - b * 2) / 1000; };
+
 /** Transfer market: sign a player by paying the transfer fee through the gateway. Caps are checked before paying. */
 export default function Market({ session }: { session: Session }) {
   const { t, lang } = useLang();
   const q = useClub();
   const { pay, busy } = usePay();
   const [pick, setPick] = useState<Listing | null>(null);
+  const [plan, setPlan] = useState<'full' | 'installments'>('full');
   const [err, setErr] = useState<ApiErr | null>(null);
   const [query, setQuery] = useState('');
   const s = q.data;
@@ -46,7 +50,7 @@ export default function Market({ session }: { session: Session }) {
   const buy = async () => {
     if (!pick) return;
     setErr(null);
-    const r = await pay({ kind: 'transfer', listingId: pick.id }, t(`تم التعاقد مع ${pick.name}`, `${pick.nameEn} signed`));
+    const r = await pay({ kind: 'transfer', listingId: pick.id, plan }, t(`تم التعاقد مع ${pick.name}`, `${pick.nameEn} signed`));
     if (r.ok) setPick(null); else if (r.error) setErr(r.error);
   };
 
@@ -93,7 +97,7 @@ export default function Market({ session }: { session: Session }) {
                   <p className="mt-2 text-[13px] text-destructive">{!f.fee ? t('الرسوم أكبر من ميزانية الانتقالات', 'Fee exceeds the transfer budget') : t('راتبه يتعدى سقف الرواتب لباقي الموسم', 'Salary would break the salary cap for the rest of the season')}</p>
                 )}
                 {isManager && !sold && (
-                  <Button className="mt-4 rounded-xl h-11" disabled={busy || !f.fee || !f.salary} onClick={() => { setErr(null); setPick(l); }} data-testid={`button-buy-${l.id}`}>
+                  <Button className="mt-4 rounded-xl h-11" disabled={busy || !f.fee || !f.salary} onClick={() => { setErr(null); setPlan('full'); setPick(l); }} data-testid={`button-buy-${l.id}`}>
                     <ShoppingCart className="h-4 w-4" />{t('تعاقد وادفع', 'Sign and pay')}
                   </Button>
                 )}
@@ -111,8 +115,18 @@ export default function Market({ session }: { session: Session }) {
                 <DialogTitle>{t(`التعاقد مع ${pick.name}`, `Sign ${pick.nameEn}`)}</DialogTitle>
                 <DialogDescription>{t('ادفع رسوم الانتقال وينضاف عقده للنادي', 'Pay the transfer fee and his contract is added')}</DialogDescription>
               </DialogHeader>
+              <div role="radiogroup" aria-label={t('طريقة الدفع', 'Payment plan')} className="grid grid-cols-2 gap-2">
+                {([['full', t('دفعة وحدة', 'Pay in full'), pick.fee], ['installments', t('3 أقساط شهرية', '3 monthly installments'), firstPart(pick.fee)]] as const).map(([k, label, now]) => (
+                  <button key={k} type="button" role="radio" aria-checked={plan === k} onClick={() => setPlan(k)} data-testid={`plan-${k}`}
+                    className={cn('rounded-xl border p-3 text-start transition-colors', plan === k ? 'border-primary bg-accent/60 ring-1 ring-primary' : 'border-border hover:bg-muted/50')}>
+                    <span className="block text-[14px] font-semibold">{label}</span>
+                    <span className="block text-[12.5px] text-muted-foreground">{t('الحين ', 'Now ')}<Money v={now} raw /></span>
+                  </button>
+                ))}
+              </div>
               <ul className="space-y-2 text-[14.5px]">
-                <li className="flex justify-between gap-3"><span className="text-muted-foreground">{t('رسوم الانتقال (تندفع الحين)', 'Transfer fee (paid now)')}</span><Money v={pick.fee} className="font-semibold" /></li>
+                <li className="flex justify-between gap-3"><span className="text-muted-foreground">{plan === 'full' ? t('رسوم الانتقال (تندفع الحين)', 'Transfer fee (paid now)') : t('القسط الأول (يندفع الحين)', 'First installment (paid now)')}</span><Money v={plan === 'full' ? pick.fee : firstPart(pick.fee)} raw className="font-semibold" /></li>
+                {plan === 'installments' && <li className="flex justify-between gap-3"><span className="text-muted-foreground">{t('قسطين شهريين (ينحجزون من بند الانتقالات)', 'Two monthly installments (reserved)')}</span><Money v={pick.fee - firstPart(pick.fee)} raw className="font-semibold" /></li>}
                 <li className="flex justify-between gap-3"><span className="text-muted-foreground">{t(`راتب ${monthsLeft} شهر (ينحجز من الميزانية)`, `${monthsLeft} months of salary (reserved)`)}</span><Money v={pick.salary * monthsLeft} className="font-semibold" /></li>
                 <li className="flex justify-between gap-3 pt-2 border-t border-border"><span className="text-muted-foreground">{t('يبقى في ميزانية الانتقالات', 'Transfer budget after')}</span><Money v={(transfers?.remaining ?? 0) - pick.fee} className="font-semibold" /></li>
               </ul>
@@ -121,7 +135,7 @@ export default function Market({ session }: { session: Session }) {
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button variant="outline" className="rounded-xl h-11" onClick={() => setPick(null)}>{t('إلغاء', 'Cancel')}</Button>
                 <Button className="rounded-xl h-11" disabled={busy} onClick={buy} data-testid="button-confirm-buy">
-                  <CheckCircle2 className="h-4 w-4" />{t('ادفع ', 'Pay ')}<Money v={pick.fee} raw className="[&_.text-muted-foreground]:text-primary-foreground/70" />
+                  <CheckCircle2 className="h-4 w-4" />{t('ادفع ', 'Pay ')}<Money v={plan === 'full' ? pick.fee : firstPart(pick.fee)} raw className="[&_.text-muted-foreground]:text-primary-foreground/70" />
                 </Button>
               </DialogFooter>
             </>

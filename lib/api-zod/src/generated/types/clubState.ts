@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Adjustment } from './adjustment';
+import type { Advance } from './advance';
 import type { Alert } from './alert';
 import type { ApprovalRequest } from './approvalRequest';
 import type { AuditEntry } from './auditEntry';
@@ -14,6 +15,8 @@ import type { ClubStateGateway } from './clubStateGateway';
 import type { ClubStateMode } from './clubStateMode';
 import type { Contract } from './contract';
 import type { Insight } from './insight';
+import type { Installment } from './installment';
+import type { Invoice } from './invoice';
 import type { Listing } from './listing';
 import type { Match } from './match';
 import type { Payment } from './payment';
@@ -55,4 +58,8 @@ export interface ClubState {
   payments: Payment[];
   wallet: Wallet;
   gateway: ClubStateGateway;
+  invoices: Invoice[];
+  installments: Installment[];
+  advances: Advance[];
+  income: number;
 }

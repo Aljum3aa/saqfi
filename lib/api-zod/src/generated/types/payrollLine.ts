@@ -11,5 +11,6 @@ export interface PayrollLine {
   salary: number;
   bonus: number;
   fine: number;
+  advance?: number;
   net: number;
 }

@@ -108,6 +108,7 @@ export interface PayrollLine {
   salary: number;
   bonus: number;
   fine: number;
+  advance?: number;
   net: number;
 }
 
@@ -285,6 +286,8 @@ export type PaymentKind = typeof PaymentKind[keyof typeof PaymentKind];
 export const PaymentKind = {
   payroll: 'payroll',
   transfer: 'transfer',
+  installment: 'installment',
+  invoice: 'invoice',
 } as const;
 
 export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
@@ -327,6 +330,7 @@ export type WalletEntryKind = typeof WalletEntryKind[keyof typeof WalletEntryKin
 export const WalletEntryKind = {
   salary: 'salary',
   withdrawal: 'withdrawal',
+  advance: 'advance',
 } as const;
 
 export interface WalletEntry {
@@ -343,6 +347,56 @@ export interface Wallet {
   balance: number;
   totalHeld: number;
   entries: WalletEntry[];
+}
+
+export type InvoiceStatus = typeof InvoiceStatus[keyof typeof InvoiceStatus];
+
+
+export const InvoiceStatus = {
+  open: 'open',
+  paid: 'paid',
+  void: 'void',
+} as const;
+
+export interface Invoice {
+  id: string;
+  sponsor: string;
+  description: string;
+  amount: number;
+  due: string;
+  status: InvoiceStatus;
+  createdAt: string;
+  paidAt?: string;
+  token: string;
+}
+
+export type InstallmentStatus = typeof InstallmentStatus[keyof typeof InstallmentStatus];
+
+
+export const InstallmentStatus = {
+  scheduled: 'scheduled',
+  paid: 'paid',
+} as const;
+
+export interface Installment {
+  id: string;
+  listingId: string;
+  playerName: string;
+  playerNameEn: string;
+  n: number;
+  of: number;
+  amount: number;
+  due: string;
+  status: InstallmentStatus;
+  paidAt?: string;
+}
+
+export interface Advance {
+  id: string;
+  playerId: string;
+  amount: number;
+  date: string;
+  settledMonth?: string;
 }
 
 export interface ClubState {
@@ -378,6 +432,10 @@ export interface ClubState {
   payments: Payment[];
   wallet: Wallet;
   gateway: ClubStateGateway;
+  invoices: Invoice[];
+  installments: Installment[];
+  advances: Advance[];
+  income: number;
 }
 
 export type AdjustmentInputKind = typeof AdjustmentInputKind[keyof typeof AdjustmentInputKind];
@@ -474,12 +532,23 @@ export type CheckoutInputKind = typeof CheckoutInputKind[keyof typeof CheckoutIn
 export const CheckoutInputKind = {
   payroll: 'payroll',
   transfer: 'transfer',
+  installment: 'installment',
+} as const;
+
+export type CheckoutInputPlan = typeof CheckoutInputPlan[keyof typeof CheckoutInputPlan];
+
+
+export const CheckoutInputPlan = {
+  full: 'full',
+  installments: 'installments',
 } as const;
 
 export interface CheckoutInput {
   kind: CheckoutInputKind;
   month?: string;
   listingId?: string;
+  plan?: CheckoutInputPlan;
+  installmentId?: string;
   returnUrl: string;
 }
 
@@ -507,5 +576,56 @@ export interface ConfirmInput {
 export interface WithdrawInput {
   /** @exclusiveMinimum 0 */
   amount: number;
+}
+
+export interface InvoiceInput {
+  /** @minLength 2 */
+  sponsor: string;
+  /** @minLength 2 */
+  description: string;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  due: string;
+}
+
+export type PublicInvoiceStatus = typeof PublicInvoiceStatus[keyof typeof PublicInvoiceStatus];
+
+
+export const PublicInvoiceStatus = {
+  open: 'open',
+  paid: 'paid',
+  void: 'void',
+} as const;
+
+export type PublicInvoiceGateway = typeof PublicInvoiceGateway[keyof typeof PublicInvoiceGateway];
+
+
+export const PublicInvoiceGateway = {
+  stripe: 'stripe',
+  sandbox: 'sandbox',
+} as const;
+
+export interface PublicInvoice {
+  id: string;
+  club: string;
+  clubEn: string;
+  sponsor: string;
+  description: string;
+  amount: number;
+  due: string;
+  status: PublicInvoiceStatus;
+  gateway: PublicInvoiceGateway;
+  paidAt?: string;
+}
+
+export interface PublicCheckoutInput {
+  token: string;
+  returnUrl: string;
+}
+
+export interface PublicConfirmInput {
+  token: string;
+  paymentId: string;
+  sessionId?: string;
 }
 

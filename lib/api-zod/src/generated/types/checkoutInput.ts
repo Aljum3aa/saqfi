@@ -5,10 +5,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CheckoutInputKind } from './checkoutInputKind';
+import type { CheckoutInputPlan } from './checkoutInputPlan';
 
 export interface CheckoutInput {
   kind: CheckoutInputKind;
   month?: string;
   listingId?: string;
+  plan?: CheckoutInputPlan;
+  installmentId?: string;
   returnUrl: string;
 }

@@ -5,7 +5,7 @@ export type Contract = {
   salary: number; start: string; end: string;
 };
 export type PayrollLine = {
-  playerId: string; name: string; salary: number; bonus: number; fine: number; net: number;
+  playerId: string; name: string; salary: number; bonus: number; fine: number; advance?: number; net: number;
 };
 export type Payroll = {
   id: string; month: string; total: number; paidAt: string; lines: PayrollLine[];
@@ -40,17 +40,29 @@ export type Listing = {
 };
 /** Money that moved through the gateway (Stripe test mode or the sandbox). */
 export type Payment = {
-  id: string; kind: "payroll" | "transfer"; ref: string; description: string; descriptionEn: string;
+  id: string; kind: "payroll" | "transfer" | "installment" | "invoice"; ref: string; plan?: "full" | "installments"; description: string; descriptionEn: string;
   amount: number; status: "pending" | "paid" | "cancelled" | "failed"; provider: "stripe" | "sandbox";
   createdAt: string; paidAt?: string; chargeAmount: number; chargeCurrency: string;
   sessionId?: string; reference?: string;
 };
 /** Player wallet ledger: salaries in, withdrawals to the bank out (signed KWD). */
 export type WalletEntry = {
-  id: string; playerId: string; date: string; amount: number; kind: "salary" | "withdrawal";
+  id: string; playerId: string; date: string; amount: number; kind: "salary" | "withdrawal" | "advance";
   description: string; descriptionEn: string;
 };
-export type AuditEntry = { id: string; at: string; role: Role; action: string; detail: string; detailEn: string };
+/** A sponsor invoice: the sponsor pays through a public link, the money tops up the club budget. */
+export type Invoice = {
+  id: string; sponsor: string; description: string; amount: number; due: string;
+  status: "open" | "paid" | "void"; createdAt: string; paidAt?: string; token: string;
+};
+/** Transfer fee split into monthly installments; unpaid ones are reserved in the Transfers category. */
+export type Installment = {
+  id: string; listingId: string; playerName: string; playerNameEn: string; n: number; of: number;
+  amount: number; due: string; status: "scheduled" | "paid"; paidAt?: string;
+};
+/** Salary paid early into the player's wallet, deducted from his next payroll. */
+export type Advance = { id: string; playerId: string; amount: number; date: string; settledMonth?: string };
+export type AuditEntry = { id: string; at: string; role: Role | "sponsor"; action: string; detail: string; detailEn: string };
 export type Club = {
   id: string; revision: number; club: string; clubEn: string;
   seasonStart: string; seasonEnd: string; totalBudget: number;
@@ -59,6 +71,7 @@ export type Club = {
   adjustments: Adjustment[]; matches: Match[]; bonusRules: BonusRules;
   approvalThreshold: number; requests: ApprovalRequest[]; audit: AuditEntry[];
   market: Listing[]; payments: Payment[]; wallet: WalletEntry[];
+  invoices: Invoice[]; installments: Installment[]; advances: Advance[];
 };
 export class ClubError extends Error {
   constructor(

@@ -51,7 +51,7 @@ export default function PlayerHome({ session }: { session: Session }) {
           </section>
         );
       })}
-      <WalletCard wallet={s.wallet} />
+      <WalletCard wallet={s.wallet} salary={s.contracts[0]?.salary ?? 0} advances={s.advances} />
       {s.adjustments.some((a) => !a.settledMonth) && (
         <section className="panel p-5 md:p-7 mb-6" data-testid="card-own-pending">
           <SectionTitle aside={t('مع راتبك الجاي', 'With your next salary')}>{t('مكافآت وغرامات', 'Bonuses & fines')}</SectionTitle>

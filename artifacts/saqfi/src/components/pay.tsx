@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Money } from '@/components/shell';
 
-type PayInput = { kind: 'payroll'; month: string } | { kind: 'transfer'; listingId: string };
+type PayInput = { kind: 'payroll'; month: string } | { kind: 'transfer'; listingId: string; plan?: 'full' | 'installments' } | { kind: 'installment'; installmentId: string };
 type Receipt = { title: string; amount: number; message: string; provider: string };
 type Ctx = { pay: (i: PayInput, title: string) => Promise<{ ok: boolean; error?: ReturnType<typeof apiErr> }>; busy: boolean };
 const PayCtx = createContext<Ctx>({ pay: async () => ({ ok: false }), busy: false });

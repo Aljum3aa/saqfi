@@ -101,7 +101,7 @@ export function seedClub(): Club {
       status: "pending", reason: "threshold", requestedAt: "2026-10-15T09:30:00.000Z",
       currency: "QAR", originalAmount: 106650, rate: 11.85,
     }],
-    audit: [], market: marketSeed(), payments: [], wallet: [],
+    audit: [], market: marketSeed(), payments: [], wallet: [], invoices: [], installments: [], advances: [],
   };
   // Run the seeded months through the same payroll logic the API uses.
   for (const month of ["2026-07", "2026-08", "2026-09"]) {

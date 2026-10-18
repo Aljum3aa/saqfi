@@ -134,6 +134,7 @@ export default function Payroll({ session }: { session: Session }) {
                           <span className="text-[13px] text-muted-foreground">{t('الراتب ', 'Salary ')}<Money v={l.salary} exact /></span>
                           {l.bonus > 0 && <Chip tone="good">+<Money v={l.bonus} exact unit={false} />&nbsp;{t('مكافأة', 'bonus')}</Chip>}
                           {l.fine > 0 && <Chip tone="bad">-<Money v={l.fine} exact unit={false} />&nbsp;{t('غرامة', 'fine')}</Chip>}
+                          {(l.advance ?? 0) > 0 && <Chip tone="warn">-<Money v={l.advance ?? 0} exact unit={false} />&nbsp;{t('سلفة', 'advance')}</Chip>}
                           <Money v={l.net} exact className="font-semibold ms-auto" />
                         </li>
                       ))}

@@ -91,6 +91,7 @@ export const GetClubStateResponse = zod.object({
   "salary": zod.number(),
   "bonus": zod.number(),
   "fine": zod.number(),
+  "advance": zod.number().optional(),
   "net": zod.number()
 }))
 })),
@@ -199,7 +200,7 @@ export const GetClubStateResponse = zod.object({
 })),
   "payments": zod.array(zod.object({
   "id": zod.string(),
-  "kind": zod.enum(['payroll', 'transfer']),
+  "kind": zod.enum(['payroll', 'transfer', 'installment', 'invoice']),
   "ref": zod.string(),
   "description": zod.string(),
   "descriptionEn": zod.string(),
@@ -220,12 +221,43 @@ export const GetClubStateResponse = zod.object({
   "playerId": zod.string(),
   "date": zod.string(),
   "amount": zod.number(),
-  "kind": zod.enum(['salary', 'withdrawal']),
+  "kind": zod.enum(['salary', 'withdrawal', 'advance']),
   "description": zod.string(),
   "descriptionEn": zod.string()
 }))
 }),
-  "gateway": zod.enum(['stripe', 'sandbox'])
+  "gateway": zod.enum(['stripe', 'sandbox']),
+  "invoices": zod.array(zod.object({
+  "id": zod.string(),
+  "sponsor": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "due": zod.string(),
+  "status": zod.enum(['open', 'paid', 'void']),
+  "createdAt": zod.string(),
+  "paidAt": zod.string().optional(),
+  "token": zod.string()
+})),
+  "installments": zod.array(zod.object({
+  "id": zod.string(),
+  "listingId": zod.string(),
+  "playerName": zod.string(),
+  "playerNameEn": zod.string(),
+  "n": zod.number().int(),
+  "of": zod.number().int(),
+  "amount": zod.number(),
+  "due": zod.string(),
+  "status": zod.enum(['scheduled', 'paid']),
+  "paidAt": zod.string().optional()
+})),
+  "advances": zod.array(zod.object({
+  "id": zod.string(),
+  "playerId": zod.string(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "settledMonth": zod.string().optional()
+})),
+  "income": zod.number()
 })
 
 
@@ -453,9 +485,11 @@ export const GetRatesResponse = zod.object({
 
 
 export const StartCheckoutBody = zod.object({
-  "kind": zod.enum(['payroll', 'transfer']),
+  "kind": zod.enum(['payroll', 'transfer', 'installment']),
   "month": zod.string().optional(),
   "listingId": zod.string().optional(),
+  "plan": zod.enum(['full', 'installments']).optional(),
+  "installmentId": zod.string().optional(),
   "returnUrl": zod.string()
 })
 
@@ -506,6 +540,109 @@ export const WithdrawWalletBody = zod.object({
 })
 
 export const WithdrawWalletResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const createInvoiceBodySponsorMin = 2;
+
+export const createInvoiceBodyDescriptionMin = 2;
+
+export const createInvoiceBodyAmountExclusiveMin = 0;
+
+
+
+export const CreateInvoiceBody = zod.object({
+  "sponsor": zod.string().min(createInvoiceBodySponsorMin),
+  "description": zod.string().min(createInvoiceBodyDescriptionMin),
+  "amount": zod.number().gt(createInvoiceBodyAmountExclusiveMin),
+  "due": zod.string()
+})
+
+export const CreateInvoiceResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const VoidInvoiceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const VoidInvoiceBody = zod.object({
+  "sessionId": zod.string().optional()
+})
+
+export const VoidInvoiceResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const requestAdvanceBodyAmountExclusiveMin = 0;
+
+
+
+export const RequestAdvanceBody = zod.object({
+  "amount": zod.number().gt(requestAdvanceBodyAmountExclusiveMin)
+})
+
+export const RequestAdvanceResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const GetPublicInvoiceParams = zod.object({
+  "id": zod.coerce.string(),
+  "token": zod.coerce.string()
+})
+
+export const GetPublicInvoiceResponse = zod.object({
+  "id": zod.string(),
+  "club": zod.string(),
+  "clubEn": zod.string(),
+  "sponsor": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "due": zod.string(),
+  "status": zod.enum(['open', 'paid', 'void']),
+  "gateway": zod.enum(['stripe', 'sandbox']),
+  "paidAt": zod.string().optional()
+})
+
+
+export const CheckoutPublicInvoiceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CheckoutPublicInvoiceBody = zod.object({
+  "token": zod.string(),
+  "returnUrl": zod.string()
+})
+
+export const CheckoutPublicInvoiceResponse = zod.object({
+  "paymentId": zod.string(),
+  "provider": zod.enum(['stripe', 'sandbox']),
+  "url": zod.string().optional(),
+  "amount": zod.number(),
+  "chargeAmount": zod.number(),
+  "chargeCurrency": zod.string()
+})
+
+
+export const ConfirmPublicInvoiceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ConfirmPublicInvoiceBody = zod.object({
+  "token": zod.string(),
+  "paymentId": zod.string(),
+  "sessionId": zod.string().optional()
+})
+
+export const ConfirmPublicInvoiceResponse = zod.object({
   "message": zod.string(),
   "pending": zod.boolean().optional()
 })

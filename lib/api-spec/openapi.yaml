@@ -286,6 +286,94 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/invoices:
+    post:
+      operationId: createInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/InvoiceInput"}
+      responses:
+        "201":
+          description: Invoice created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/invoices/{id}/void:
+    post:
+      operationId: voidInvoice
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ConfirmInput"}
+      responses:
+        "200":
+          description: Invoice voided
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/wallet/advance:
+    post:
+      operationId: requestAdvance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/WithdrawInput"}
+      responses:
+        "201":
+          description: Advance paid into the wallet
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/public/invoices/{id}/{token}:
+    get:
+      operationId: getPublicInvoice
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: token, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Invoice as the sponsor sees it
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PublicInvoice"}
+  /saqfi/public/invoices/{id}/checkout:
+    post:
+      operationId: checkoutPublicInvoice
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PublicCheckoutInput"}
+      responses:
+        "201":
+          description: Payment created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CheckoutResult"}
+  /saqfi/public/invoices/{id}/confirm:
+    post:
+      operationId: confirmPublicInvoice
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PublicConfirmInput"}
+      responses:
+        "200":
+          description: Invoice paid
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
 components:
   schemas:
     HealthStatus:
@@ -389,6 +477,7 @@ components:
         salary: {type: number}
         bonus: {type: number}
         fine: {type: number}
+        advance: {type: number}
         net: {type: number}
     Payroll:
       type: object
@@ -415,7 +504,7 @@ components:
         amount: {type: number}
     ClubState:
       type: object
-      required: [club, clubEn, seasonStart, seasonEnd, totalBudget, mode, categories, contracts, payrolls, transactions, alerts, trend, spent, committed, remaining, forecast, monthlyPayroll, nextPayrollMonth, today, adjustments, matches, bonusRules, approvalThreshold, requests, audit, pendingBonuses, pendingFines, insights, market, payments, wallet, gateway]
+      required: [club, clubEn, seasonStart, seasonEnd, totalBudget, mode, categories, contracts, payrolls, transactions, alerts, trend, spent, committed, remaining, forecast, monthlyPayroll, nextPayrollMonth, today, adjustments, matches, bonusRules, approvalThreshold, requests, audit, pendingBonuses, pendingFines, insights, market, payments, wallet, gateway, invoices, installments, advances, income]
       properties:
         club: {type: string}
         clubEn: {type: string}
@@ -449,6 +538,10 @@ components:
         payments: {type: array, items: {$ref: "#/components/schemas/Payment"}}
         wallet: {$ref: "#/components/schemas/Wallet"}
         gateway: {type: string, enum: [stripe, sandbox]}
+        invoices: {type: array, items: {$ref: "#/components/schemas/Invoice"}}
+        installments: {type: array, items: {$ref: "#/components/schemas/Installment"}}
+        advances: {type: array, items: {$ref: "#/components/schemas/Advance"}}
+        income: {type: number}
     Adjustment:
       type: object
       required: [id, playerId, kind, amount, reason, date]
@@ -594,7 +687,7 @@ components:
       required: [id, kind, ref, description, descriptionEn, amount, status, provider, createdAt, chargeAmount, chargeCurrency]
       properties:
         id: {type: string}
-        kind: {type: string, enum: [payroll, transfer]}
+        kind: {type: string, enum: [payroll, transfer, installment, invoice]}
         ref: {type: string}
         description: {type: string}
         descriptionEn: {type: string}
@@ -614,7 +707,7 @@ components:
         playerId: {type: string}
         date: {type: string}
         amount: {type: number}
-        kind: {type: string, enum: [salary, withdrawal]}
+        kind: {type: string, enum: [salary, withdrawal, advance]}
         description: {type: string}
         descriptionEn: {type: string}
     Wallet:
@@ -628,9 +721,11 @@ components:
       type: object
       required: [kind, returnUrl]
       properties:
-        kind: {type: string, enum: [payroll, transfer]}
+        kind: {type: string, enum: [payroll, transfer, installment]}
         month: {type: string}
         listingId: {type: string}
+        plan: {type: string, enum: [full, installments]}
+        installmentId: {type: string}
         returnUrl: {type: string}
     CheckoutResult:
       type: object
@@ -651,3 +746,74 @@ components:
       required: [amount]
       properties:
         amount: {type: number, exclusiveMinimum: 0}
+    Invoice:
+      type: object
+      required: [id, sponsor, description, amount, due, status, createdAt, token]
+      properties:
+        id: {type: string}
+        sponsor: {type: string}
+        description: {type: string}
+        amount: {type: number}
+        due: {type: string}
+        status: {type: string, enum: [open, paid, void]}
+        createdAt: {type: string}
+        paidAt: {type: string}
+        token: {type: string}
+    InvoiceInput:
+      type: object
+      required: [sponsor, description, amount, due]
+      properties:
+        sponsor: {type: string, minLength: 2}
+        description: {type: string, minLength: 2}
+        amount: {type: number, exclusiveMinimum: 0}
+        due: {type: string}
+    PublicInvoice:
+      type: object
+      required: [id, club, clubEn, sponsor, description, amount, due, status, gateway]
+      properties:
+        id: {type: string}
+        club: {type: string}
+        clubEn: {type: string}
+        sponsor: {type: string}
+        description: {type: string}
+        amount: {type: number}
+        due: {type: string}
+        status: {type: string, enum: [open, paid, void]}
+        gateway: {type: string, enum: [stripe, sandbox]}
+        paidAt: {type: string}
+    PublicCheckoutInput:
+      type: object
+      required: [token, returnUrl]
+      properties:
+        token: {type: string}
+        returnUrl: {type: string}
+    PublicConfirmInput:
+      type: object
+      required: [token, paymentId]
+      properties:
+        token: {type: string}
+        paymentId: {type: string}
+        sessionId: {type: string}
+    Installment:
+      type: object
+      required: [id, listingId, playerName, playerNameEn, n, of, amount, due, status]
+      properties:
+        id: {type: string}
+        listingId: {type: string}
+        playerName: {type: string}
+        playerNameEn: {type: string}
+        n: {type: integer}
+        of: {type: integer}
+        amount: {type: number}
+        due: {type: string}
+        status: {type: string, enum: [scheduled, paid]}
+        paidAt: {type: string}
+    Advance:
+      type: object
+      required: [id, playerId, amount, date]
+      properties:
+        id: {type: string}
+        playerId: {type: string}
+        amount: {type: number}
+        date: {type: string}
+        settledMonth: {type: string}

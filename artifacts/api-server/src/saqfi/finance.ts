@@ -43,12 +43,17 @@ export function pending(club: Club, kind: "bonus" | "fine", playerId?: string) {
   return club.adjustments.filter(a => a.kind === kind && !a.settledMonth && (!playerId || a.playerId === playerId))
     .reduce((sum, a) => sum + fils(a.amount), 0);
 }
+export function pendingAdvances(club: Club, playerId?: string) {
+  return club.advances.filter(a => !a.settledMonth && (!playerId || a.playerId === playerId)).reduce((s, a) => s + fils(a.amount), 0);
+}
 export function categories(club: Club) {
   return club.categories.map(c => {
     const spent = club.transactions.filter(t => t.categoryId === c.id).reduce((sum, t) => sum + fils(t.amount), 0);
     // Reserved = salaries still owed + bonuses already earned but not yet paid.
+    // Advances already paid out are not owed again; unpaid transfer installments are owed.
     const committed = c.id === "players"
-      ? club.contracts.reduce((sum, contract) => sum + outstanding(club, contract), 0) + pending(club, "bonus") : 0;
+      ? club.contracts.reduce((sum, contract) => sum + outstanding(club, contract), 0) + pending(club, "bonus") - pendingAdvances(club)
+      : c.id === "transfers" ? club.installments.filter(i => i.status === "scheduled").reduce((s, i) => s + fils(i.amount), 0) : 0;
     return { ...c, spent: kwd(spent), committed: kwd(committed), remaining: kwd(fils(c.cap) - spent - committed) };
   });
 }
@@ -80,8 +85,11 @@ export function payrollLines(club: Club, month: string): { lines: PayrollLine[];
     const salary = covered ? fils(c.salary) : 0;
     const bonus = bonuses.reduce((s, a) => s + fils(a.amount), 0);
     const fine = Math.min(fines.reduce((s, a) => s + fils(a.amount), 0), salary + bonus);
-    settle.push(...bonuses.map(a => a.id), ...fines.map(a => a.id));
-    lines.push({ playerId: c.id, name: c.name, salary: kwd(salary), bonus: kwd(bonus), fine: kwd(fine), net: kwd(salary + bonus - fine) });
+    const advances = covered ? club.advances.filter(a => a.playerId === c.id && !a.settledMonth && a.date.slice(0, 7) <= month) : [];
+    const advance = Math.min(advances.reduce((s, a) => s + fils(a.amount), 0), salary + bonus - fine);
+    settle.push(...bonuses.map(a => a.id), ...fines.map(a => a.id), ...advances.map(a => a.id));
+    lines.push({ playerId: c.id, name: c.name, salary: kwd(salary), bonus: kwd(bonus), fine: kwd(fine),
+      ...(advance ? { advance: kwd(advance) } : {}), net: kwd(salary + bonus - fine - advance) });
   }
   return { lines, settle };
 }
@@ -91,6 +99,7 @@ export function normalize(club: Club): Club {
   club.bonusRules ??= { win: 150, draw: 50 };
   club.approvalThreshold ??= 5000;
   club.market ??= marketSeed(); club.payments ??= []; club.wallet ??= [];
+  club.invoices ??= []; club.installments ??= []; club.advances ??= [];
   // Seasons saved before the transfer market get a Transfers category funded on top of the old budget.
   if (!club.categories.some(c => c.id === "transfers")) {
     club.categories.push({ id: "transfers", name: "الانتقالات", nameEn: "Transfers", cap: 100000 });
@@ -153,5 +162,9 @@ export function snapshot(club: Club, mode: "demo" | "database", today: string) {
     payments: [...club.payments].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(({ sessionId: _s, ...p }) => p),
     wallet: { balance: 0, totalHeld: kwd(club.wallet.reduce((s, w) => s + fils(w.amount), 0)),
       entries: [] as Club["wallet"] },
+    invoices: [...club.invoices].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    installments: [...club.installments].sort((a, b) => a.due.localeCompare(b.due) || a.n - b.n),
+    advances: [...club.advances].sort((a, b) => b.date.localeCompare(a.date)),
+    income: kwd(club.invoices.filter(i => i.status === "paid").reduce((s, i) => s + fils(i.amount), 0)),
   };
 }

@@ -11,4 +11,5 @@ export type CheckoutInputKind = typeof CheckoutInputKind[keyof typeof CheckoutIn
 export const CheckoutInputKind = {
   payroll: 'payroll',
   transfer: 'transfer',
+  installment: 'installment',
 } as const;

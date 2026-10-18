@@ -21,10 +21,19 @@ import Approvals from '@/pages/approvals';
 import Audit from '@/pages/audit';
 import Market from '@/pages/market';
 import Payments from '@/pages/payments';
+import InvoicePage from '@/pages/invoice';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
 
 function Gate() {
+  /* Sponsor payment links are public: no session needed */
+  const [loc] = useLocation();
+  const inv = loc.match(/^\/invoice\/([^/]+)\/([^/?#]+)/);
+  if (inv) return <InvoicePage id={inv[1]} token={inv[2]} />;
+  return <SessionGate />;
+}
+
+function SessionGate() {
   const q = useGetSession({ query: { queryKey: getGetSessionQueryKey(), retry: false, refetchInterval: 60000 } });
   if (q.isLoading) {
     return <div className="min-h-[100dvh] grid place-items-center"><div className="animate-pulse"><Mark size={48} /></div></div>;

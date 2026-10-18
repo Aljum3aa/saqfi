@@ -11,4 +11,5 @@ export type WalletEntryKind = typeof WalletEntryKind[keyof typeof WalletEntryKin
 export const WalletEntryKind = {
   salary: 'salary',
   withdrawal: 'withdrawal',
+  advance: 'advance',
 } as const;

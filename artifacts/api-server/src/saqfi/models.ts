@@ -12,7 +12,7 @@ export const contractSchema = new Schema({
   salary: { type: Number, required: true, min: 0 }, start: String, end: String,
 }, options);
 export const payrollLineSchema = new Schema({
-  playerId: String, name: String, salary: Number, bonus: Number, fine: Number, net: Number,
+  playerId: String, name: String, salary: Number, bonus: Number, fine: Number, advance: Number, net: Number,
 }, options);
 export const payrollSchema = new Schema({
   id: String, month: String, total: Number, paidAt: String, lines: [payrollLineSchema],
@@ -31,5 +31,6 @@ const seasonSchema = new Schema({
   adjustments: [Schema.Types.Mixed], matches: [Schema.Types.Mixed], requests: [Schema.Types.Mixed],
   audit: [Schema.Types.Mixed], bonusRules: Schema.Types.Mixed, approvalThreshold: Number,
   market: [Schema.Types.Mixed], payments: [Schema.Types.Mixed], wallet: [Schema.Types.Mixed],
+  invoices: [Schema.Types.Mixed], installments: [Schema.Types.Mixed], advances: [Schema.Types.Mixed],
 }, { versionKey: false });
 export const Season = mongoose.model("SaqfiSeason", seasonSchema);
