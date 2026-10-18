@@ -76,7 +76,7 @@ export function AdvisorDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         <form className="flex gap-2 p-4 border-t border-border" onSubmit={(e) => { e.preventDefault(); send(q); }}>
           <label htmlFor="input-advisor" className="sr-only">{t('سؤالك', 'Your question')}</label>
           <Input id="input-advisor" value={q} onChange={(e) => setQ(e.target.value)} maxLength={500} placeholder={t('اكتب سؤالك…', 'Ask a question…')} className="rounded-full h-11" data-testid="input-advisor" />
-          <Button type="submit" size="icon" className="rounded-full h-11 w-11 shrink-0" disabled={q.trim().length < 2 || ask.isPending} aria-label={t('إرسال', 'Send')} data-testid="button-advisor-send">
+          <Button type="submit" size="icon" className="rounded-xl h-11 w-11 shrink-0" disabled={q.trim().length < 2 || ask.isPending} aria-label={t('إرسال', 'Send')} data-testid="button-advisor-send">
             <Send className="h-4 w-4 rtl:-scale-x-100" />
           </Button>
         </form>

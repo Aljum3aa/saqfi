@@ -41,8 +41,8 @@ export default function Transactions({ session }: { session: Session }) {
         sub={t('كل دينار انصرف. أي مصروف يمس فلوس الرواتب المحجوزة ينرفض.', 'Every dinar spent. Any expense that touches reserved salary money is rejected.')}
         action={
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" className="rounded-full h-12 px-5" onClick={() => exportCsv(list, s, lang)} data-testid="button-export"><Download className="h-4 w-4" />{t('تصدير Excel', 'Export to Excel')}</Button>
-            {isManager ? <Button className="rounded-full h-12 px-6" onClick={() => setOpen(true)} data-testid="button-new-expense"><Plus className="h-4 w-4" />{t('تسجيل مصروف', 'Record expense')}</Button> : <ReadOnlyNote />}
+            <Button variant="outline" className="rounded-xl h-12 px-5" onClick={() => exportCsv(list, s, lang)} data-testid="button-export"><Download className="h-4 w-4" />{t('تصدير Excel', 'Export to Excel')}</Button>
+            {isManager ? <Button className="rounded-xl h-12 px-6" onClick={() => setOpen(true)} data-testid="button-new-expense"><Plus className="h-4 w-4" />{t('تسجيل مصروف', 'Record expense')}</Button> : <ReadOnlyNote />}
           </div>
         } />
 
@@ -193,14 +193,14 @@ function ExpenseDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange:
         </div>
         {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('المصروف', 'The expense')} />}
         {(over || err?.exceeded !== undefined) && ok && (
-          <Button variant="outline" className="rounded-full h-11 w-full border-cap/60" disabled={request.isPending} data-testid="button-request-approval"
+          <Button variant="outline" className="rounded-xl h-11 w-full border-cap/60" disabled={request.isPending} data-testid="button-request-approval"
             onClick={() => { setErr(null); request.mutate({ data: payload() }); }}>
             <Send className="h-4 w-4 rtl:-scale-x-100" />{t('اطلب موافقة الرئيس عليه', 'Ask the president to approve it')}
           </Button>
         )}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" className="rounded-full h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
-          <Button className="rounded-full h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-expense"
+          <Button variant="outline" className="rounded-xl h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
+          <Button className="rounded-xl h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-expense"
             onClick={() => { setErr(null); create.mutate({ data: payload() }); }}>
             {create.isPending ? t('جاري التسجيل…', 'Recording…') : needsApproval ? t('أرسل للموافقة', 'Send for approval') : t('تسجيل', 'Record')} {amt > 0 && <span className="num">{kwd(amt)} {t('د.ك', 'KWD')}</span>}
           </Button>

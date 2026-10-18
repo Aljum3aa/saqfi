@@ -64,8 +64,8 @@ export default function Bonuses({ session }: { session: Session }) {
         sub={t('سجّل نتيجة المباراة وتنحجز مكافأة كل لاعب من الميزانية على طول، وتنصرف مع الراتب الجاي.', 'Record a result and each player\'s bonus is reserved from the budget at once, then paid with the next salary.')}
         action={isManager ? (
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button variant="outline" className="rounded-full h-12 px-5" onClick={() => setAdjOpen('fine')} data-testid="button-new-fine"><Gavel className="h-4 w-4" />{t('مكافأة أو غرامة', 'Bonus or fine')}</Button>
-            <Button className="rounded-full h-12 px-6" onClick={() => setMatchOpen(true)} data-testid="button-new-match"><Plus className="h-4 w-4" />{t('تسجيل نتيجة', 'Record result')}</Button>
+            <Button variant="outline" className="rounded-xl h-12 px-5" onClick={() => setAdjOpen('fine')} data-testid="button-new-fine"><Gavel className="h-4 w-4" />{t('مكافأة أو غرامة', 'Bonus or fine')}</Button>
+            <Button className="rounded-xl h-12 px-6" onClick={() => setMatchOpen(true)} data-testid="button-new-match"><Plus className="h-4 w-4" />{t('تسجيل نتيجة', 'Record result')}</Button>
           </div>
         ) : <ReadOnlyNote />} />
 
@@ -89,7 +89,7 @@ export default function Bonuses({ session }: { session: Session }) {
           <Money v={s.bonusRules.draw} className="font-display text-[22px] font-semibold" />
         </div>
         <span className="flex-1" />
-        {isManager && <Button variant="ghost" className="rounded-full h-11" onClick={() => setRulesOpen(true)} data-testid="button-edit-rules"><Pencil className="h-4 w-4" />{t('تعديل', 'Edit')}</Button>}
+        {isManager && <Button variant="ghost" className="rounded-xl h-11" onClick={() => setRulesOpen(true)} data-testid="button-edit-rules"><Pencil className="h-4 w-4" />{t('تعديل', 'Edit')}</Button>}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] items-start">
@@ -251,8 +251,8 @@ function MatchDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange: (
         </div>
         {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('تسجيل النتيجة', 'The result')} />}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" className="rounded-full h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
-          <Button className="rounded-full h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-match"
+          <Button variant="outline" className="rounded-xl h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
+          <Button className="rounded-xl h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-match"
             onClick={() => { setErr(null); create.mutate({ data: { date: f.date, opponent: f.opponent.trim(), opponentEn: f.opponentEn.trim(), home: f.home, goalsFor: gf, goalsAgainst: ga, competition: f.competition, playerIds: squad } }); }}>
             {create.isPending ? t('جاري الحفظ…', 'Saving…') : t('حفظ النتيجة', 'Save result')}
           </Button>
@@ -320,8 +320,8 @@ function AdjustmentDialog({ kind: initial, onClose, s }: { kind: 'bonus' | 'fine
         )}
         {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} op={f.kind === 'fine' ? t('الغرامة', 'The fine') : t('المكافأة', 'The bonus')} />}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" className="rounded-full h-11 px-6" onClick={onClose}>{t('إلغاء', 'Cancel')}</Button>
-          <Button className="rounded-full h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-adj"
+          <Button variant="outline" className="rounded-xl h-11 px-6" onClick={onClose}>{t('إلغاء', 'Cancel')}</Button>
+          <Button className="rounded-xl h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-adj"
             onClick={() => { setErr(null); create.mutate({ data: { playerId: f.playerId, kind: f.kind, amount: amt, reason: f.reason.trim(), date: f.date } }); }}>
             {create.isPending ? t('جاري الحفظ…', 'Saving…') : t('حفظ', 'Save')}
           </Button>
@@ -358,8 +358,8 @@ function RulesDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange: (
         </div>
         {err && <ErrorBox msg={err.msg} />}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" className="rounded-full h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
-          <Button className="rounded-full h-11 px-6" disabled={!ok || save.isPending} onClick={() => save.mutate({ data: { win: Number(win), draw: Number(draw) } })}>{t('حفظ', 'Save')}</Button>
+          <Button variant="outline" className="rounded-xl h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
+          <Button className="rounded-xl h-11 px-6" disabled={!ok || save.isPending} onClick={() => save.mutate({ data: { win: Number(win), draw: Number(draw) } })}>{t('حفظ', 'Save')}</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -29,7 +29,7 @@ export default function Budget({ session }: { session: Session }) {
       <PageHead
         title={t('الميزانية', 'Budget')}
         sub={t('سقف كل بند، وكم انصرف منه، وكم محجوز للرواتب.', 'Each category\'s cap, what was spent, and what is reserved for salaries.')}
-        action={isManager ? (!editing ? <Button className="rounded-full h-12 px-6" data-testid="button-edit-budget" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" />{t('تعديل الميزانية', 'Edit budget')}</Button> : undefined) : <ReadOnlyNote />}
+        action={isManager ? (!editing ? <Button className="rounded-xl h-12 px-6" data-testid="button-edit-budget" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" />{t('تعديل الميزانية', 'Edit budget')}</Button> : undefined) : <ReadOnlyNote />}
       />
       {editing && isManager ? <BudgetEditor s={s} onDone={() => setEditing(false)} /> : <BudgetCards s={s} />}
       <MonthlyChart s={s} />
@@ -91,7 +91,7 @@ function MonthlyChart({ s }: { s: ClubState }) {
                 tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
               <Tooltip cursor={{ fill: 'hsl(218 40% 95%)', radius: 8 }} contentStyle={{ background: '#fff', border: '1px solid hsl(220 16% 90%)', borderRadius: 12, fontSize: 14, fontFamily: 'inherit', boxShadow: '0 8px 24px hsl(218 40% 20% / .08)' }}
                 formatter={(v: number) => [`${kwd(v)} ${t('د.ك', 'KWD')}`, t('المصروف', 'Spent')]} />
-              <Bar dataKey="amount" fill="#0F5F5A" radius={[10, 10, 4, 4]} maxBarSize={40} />
+              <Bar dataKey="amount" fill="#0B6B4C" radius={[10, 10, 4, 4]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -152,8 +152,8 @@ function BudgetEditor({ s, onDone }: { s: ClubState; onDone: () => void }) {
       {below.length > 0 && <p className="text-destructive mt-2" role="alert">{t('هالبنود أقل من الحد الأدنى: ', 'Below the minimum: ')}{below.map((c) => t(c.name, c.nameEn)).join(t('، ', ', '))}</p>}
       {err && <div className="mt-4"><ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('تعديل الميزانية', 'Budget change')} /></div>}
       <div className="flex flex-col-reverse sm:flex-row gap-2 mt-6 sm:justify-end">
-        <Button variant="outline" className="rounded-full h-11 px-6" onClick={onDone} data-testid="button-cancel-budget">{t('إلغاء', 'Cancel')}</Button>
-        <Button className="rounded-full h-11 px-6" disabled={!ok || save.isPending} data-testid="button-save-budget"
+        <Button variant="outline" className="rounded-xl h-11 px-6" onClick={onDone} data-testid="button-cancel-budget">{t('إلغاء', 'Cancel')}</Button>
+        <Button className="rounded-xl h-11 px-6" disabled={!ok || save.isPending} data-testid="button-save-budget"
           onClick={() => { setErr(null); save.mutate({ data: { total: fils(total) / 1000, categories: s.categories.map((c) => ({ id: c.id, cap: fils(caps[c.id]) / 1000 })) } }); }}>
           {save.isPending ? t('جاري الحفظ…', 'Saving…') : t('حفظ الميزانية', 'Save budget')}
         </Button>

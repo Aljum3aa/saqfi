@@ -35,7 +35,7 @@ export default function Contracts({ session }: { session: Session }) {
     <div>
       <PageHead title={t('اللاعبين والعقود', 'Players & contracts')}
         sub={t('كل عقد جديد ينحجز راتبه من الميزانية على طول.', 'Each new contract reserves its salary from the budget right away.')}
-        action={isManager ? <Button className="rounded-full h-12 px-6" onClick={() => setOpen(true)} data-testid="button-new-contract"><Plus className="h-4 w-4" />{t('إضافة عقد', 'Add contract')}</Button> : <ReadOnlyNote />} />
+        action={isManager ? <Button className="rounded-xl h-12 px-6" onClick={() => setOpen(true)} data-testid="button-new-contract"><Plus className="h-4 w-4" />{t('إضافة عقد', 'Add contract')}</Button> : <ReadOnlyNote />} />
 
       <StatStrip className="mb-5">
         <Stat label={t('عدد اللاعبين', 'Players')}><span className="num">{s.contracts.length}</span></Stat>
@@ -159,8 +159,8 @@ function ContractDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange
         {issues.length > 0 && <ul className="text-destructive space-y-0.5 text-[15px]" role="alert">{issues.map((i) => <li key={i}>{i}</li>)}</ul>}
         {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('العقد', 'The contract')} />}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" className="rounded-full h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
-          <Button className="rounded-full h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-contract"
+          <Button variant="outline" className="rounded-xl h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
+          <Button className="rounded-xl h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-contract"
             onClick={() => { setErr(null); create.mutate({ data: { name: f.name.trim(), nameEn: f.nameEn.trim(), position: f.position, salary: Number(f.salary), start: f.start, end: f.end } }); }}>
             {create.isPending ? t('جاري الحفظ…', 'Saving…') : t('حفظ العقد', 'Save contract')}
           </Button>

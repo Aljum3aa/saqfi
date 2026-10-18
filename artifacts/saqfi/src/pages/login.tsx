@@ -9,7 +9,7 @@ import crestUrl from '@assets/crest_1792268676116.webp';
 
 type Role = 'manager' | 'president' | 'player';
 
-const HERO_BG = 'bg-[radial-gradient(120%_120%_at_100%_0%,#2A7F78_0%,#0F5F5A_45%,#08302E_100%)]';
+const HERO_BG = 'bg-[#0A2B20] bg-[radial-gradient(120%_90%_at_100%_0%,hsl(161_60%_28%/.55),transparent_60%)]';
 
 /** Illustration of the product idea: one season cap, spending can never pass the gold line. */
 function CapPreview() {

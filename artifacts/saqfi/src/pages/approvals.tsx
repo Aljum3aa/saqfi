@@ -44,7 +44,7 @@ export default function Approvals({ session }: { session: Session }) {
           <div className="text-[13px] text-muted-foreground">{t('حد موافقة الرئيس', 'President approval limit')}</div>
           <div className="font-semibold">{t('أي مصروف من ', 'Any expense from ')}<Money v={s.approvalThreshold} className="font-display text-[20px]" />{t(' وفوق', ' and up')}</div>
         </div>
-        {isPresident && <Button variant="ghost" className="rounded-full h-11" onClick={() => setLimitOpen(true)} data-testid="button-edit-threshold"><Pencil className="h-4 w-4" />{t('تعديل الحد', 'Change limit')}</Button>}
+        {isPresident && <Button variant="ghost" className="rounded-xl h-11" onClick={() => setLimitOpen(true)} data-testid="button-edit-threshold"><Pencil className="h-4 w-4" />{t('تعديل الحد', 'Change limit')}</Button>}
       </section>
 
       <SectionTitle aside={pending.length ? t(`${pending.length} بانتظار القرار`, `${pending.length} waiting`) : undefined}>{t('بانتظار القرار', 'Waiting for a decision')}</SectionTitle>
@@ -76,8 +76,8 @@ export default function Approvals({ session }: { session: Session }) {
                 )}
                 {isPresident ? (
                   <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Button variant="outline" className="rounded-full h-11" onClick={() => setDeciding({ r, approve: false })} data-testid={`button-reject-${r.id}`}><X className="h-4 w-4" />{t('رفض', 'Reject')}</Button>
-                    <Button className="rounded-full h-11" onClick={() => setDeciding({ r, approve: true })} data-testid={`button-approve-${r.id}`}><Check className="h-4 w-4" />{t('موافقة', 'Approve')}</Button>
+                    <Button variant="outline" className="rounded-xl h-11" onClick={() => setDeciding({ r, approve: false })} data-testid={`button-reject-${r.id}`}><X className="h-4 w-4" />{t('رفض', 'Reject')}</Button>
+                    <Button className="rounded-xl h-11" onClick={() => setDeciding({ r, approve: true })} data-testid={`button-approve-${r.id}`}><Check className="h-4 w-4" />{t('موافقة', 'Approve')}</Button>
                   </div>
                 ) : (
                   <div className="mt-4 flex items-center gap-2 text-[14px] text-muted-foreground"><Clock3 className="h-4 w-4" />{t('بانتظار رئيس النادي', 'Waiting for the club president')}</div>
@@ -138,8 +138,8 @@ function DecisionDialog({ r, approve, onClose }: { r: ApprovalRequest; approve: 
         <Field id="input-note" label={t('ملاحظة (اختياري)', 'Note (optional)')}><Input id="input-note" value={note} maxLength={250} onChange={(e) => setNote(e.target.value)} data-testid="input-decision-note" /></Field>
         {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('الموافقة', 'The approval')} />}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" className="rounded-full h-11 px-6" onClick={onClose}>{t('رجوع', 'Back')}</Button>
-          <Button className={cn('rounded-full h-11 px-6', !approve && 'bg-destructive hover:bg-destructive/90')} disabled={decide.isPending} data-testid="button-confirm-decision"
+          <Button variant="outline" className="rounded-xl h-11 px-6" onClick={onClose}>{t('رجوع', 'Back')}</Button>
+          <Button className={cn('rounded-xl h-11 px-6', !approve && 'bg-destructive hover:bg-destructive/90')} disabled={decide.isPending} data-testid="button-confirm-decision"
             onClick={() => { setErr(null); decide.mutate({ id: r.id, data: { approve, note: note.trim() || undefined } }); }}>
             {approve ? t('تأكيد الموافقة', 'Confirm approval') : t('تأكيد الرفض', 'Confirm rejection')}
           </Button>
@@ -171,8 +171,8 @@ function LimitDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange: (
         <Field id="input-threshold" label={t('الحد (د.ك)', 'Limit (KWD)')}><Input id="input-threshold" inputMode="decimal" className="num text-end" value={v} onChange={(e) => setV(e.target.value)} /></Field>
         {err && <ErrorBox msg={err.msg} />}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" className="rounded-full h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
-          <Button className="rounded-full h-11 px-6" disabled={!DEC3.test(v) || save.isPending} onClick={() => save.mutate({ data: { threshold: Number(v) } })}>{t('حفظ', 'Save')}</Button>
+          <Button variant="outline" className="rounded-xl h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
+          <Button className="rounded-xl h-11 px-6" disabled={!DEC3.test(v) || save.isPending} onClick={() => save.mutate({ data: { threshold: Number(v) } })}>{t('حفظ', 'Save')}</Button>
         </div>
       </DialogContent>
     </Dialog>

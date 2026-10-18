@@ -21,7 +21,7 @@ export function initials(name: string) {
 export function Avatar({ name, size = 40, className }: { name: string; size?: number; className?: string }) {
   return (
     <span aria-hidden title={name}
-      className={cn('inline-grid place-items-center rounded-full shrink-0 select-none bg-[#E6F1EF] ring-1 ring-[#0F5F5A]/10', className)}
+      className={cn('inline-grid place-items-center rounded-full shrink-0 select-none bg-[#E8F2EC] ring-1 ring-[#0B6B4C]/10', className)}
       style={{ width: size, height: size }}>
       <img src={kitUrl} alt="" draggable={false} loading="lazy"
         className="object-contain drop-shadow-[0_1px_1px_rgba(8,48,46,.25)]" style={{ width: size * 0.78, height: size * 0.78 }} />
@@ -42,7 +42,7 @@ export function Stat({ label, children, sub, tone }: { label: string; children: 
   return (
     <div className="flex-1 p-4 md:p-5 min-w-0">
       <div className="text-[13px] text-muted-foreground">{label}</div>
-      <div className={cn('mt-1 font-display text-[20px] md:text-[24px] font-semibold tracking-tight truncate',
+      <div className={cn('mt-1 font-display text-[19px] lg:text-[23px] font-semibold tracking-tight',
         tone === 'bad' && 'text-destructive', tone === 'good' && 'text-success')}>{children}</div>
       {sub && <div className="text-[12px] text-muted-foreground mt-0.5">{sub}</div>}
     </div>
@@ -73,5 +73,5 @@ export function SectionTitle({ children, aside }: { children: ReactNode; aside?:
 
 /** Toolbar wrapper for search + filter, consistent across list pages. */
 export function Toolbar({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col sm:flex-row gap-3 mb-4 [&_input]:rounded-full [&_input]:h-11 [&_button[role=combobox]]:rounded-full [&_button[role=combobox]]:h-11">{children}</div>;
+  return <div className="flex flex-col sm:flex-row gap-3 mb-4 [&_input]:rounded-xl [&_input]:h-11 [&_button[role=combobox]]:rounded-xl [&_button[role=combobox]]:h-11">{children}</div>;
 }
