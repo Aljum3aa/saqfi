@@ -7,6 +7,7 @@ import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { useGetSession, getGetSessionQueryKey, type Session } from '@workspace/api-client-react';
 import { LangProvider } from '@/lib/i18n';
+import { CurrencyProvider } from '@/lib/currency';
 import { Shell, Mark } from '@/components/shell';
 import Login from '@/pages/login';
 import Dashboard from '@/pages/dashboard';
@@ -68,12 +69,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>
+        <CurrencyProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
             <Gate />
           </WouterRouter>
           <Toaster />
         </TooltipProvider>
+        </CurrencyProvider>
       </LangProvider>
     </QueryClientProvider>
   );

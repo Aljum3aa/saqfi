@@ -103,7 +103,8 @@ export function ruleAnswer(question: string, s: State): Answer {
 }
 
 /**
- * AI answer when an OpenAI-compatible key is configured (Replit AI Integrations or OPENAI_API_KEY).
+ * AI answer from an OpenAI-compatible API: a configured key (Replit AI Integrations, OPENAI_API_KEY,
+ * OPENROUTER_API_KEY) or, with none, Pollinations' free keyless endpoint.
  * The model only sees aggregate figures, never acts, and falls back to the rule engine on any error.
  */
 export async function advise(question: string, s: State, lang: "ar" | "en"): Promise<Answer> {
@@ -111,7 +112,10 @@ export async function advise(question: string, s: State, lang: "ar" | "en"): Pro
   const openrouter = !process.env.AI_INTEGRATIONS_OPENAI_API_KEY && !process.env.OPENAI_API_KEY && !!process.env.OPENROUTER_API_KEY;
   const base = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ?? (process.env.OPENAI_API_KEY ? "https://api.openai.com/v1" : openrouter ? "https://openrouter.ai/api/v1" : "");
   const key = process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY ?? "";
-  if (!base || !key) return ruleAnswer(question, s);
+  // No key configured: use Pollinations' free, keyless OpenAI-compatible endpoint (demo figures only).
+  const keyless = !base || !key;
+  const url = keyless ? "https://text.pollinations.ai/openai" : `${base}/chat/completions`;
+  if (keyless && process.env.SAQFI_AI_OFF === "1") return ruleAnswer(question, s);
   const facts = {
     club: s.clubEn, season: `${s.seasonStart}..${s.seasonEnd}`, today: s.today, totalBudget: s.totalBudget,
     spent: s.spent, reserved: s.committed, available: s.remaining, forecast: s.forecast, monthsLeft: monthsLeft(s),
@@ -120,14 +124,14 @@ export async function advise(question: string, s: State, lang: "ar" | "en"): Pro
     players: s.contracts.length, matches: s.matches.slice(0, 6).map(m => `${m.date} ${m.result} ${m.goalsFor}-${m.goalsAgainst} vs ${m.opponentEn}`),
   };
   try {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: "POST", signal: AbortSignal.timeout(20000),
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+    const res = await fetch(url, {
+      method: "POST", signal: AbortSignal.timeout(30000),
+      headers: keyless ? { "content-type": "application/json" } : { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: process.env.SAQFI_AI_MODEL ?? (openrouter ? "openrouter/free" : "gpt-4o-mini"), temperature: 0.2, max_tokens: 400,
+        model: process.env.SAQFI_AI_MODEL ?? (keyless ? "openai" : openrouter ? "openrouter/free" : "gpt-4o-mini"), temperature: 0.2, max_tokens: 400,
         messages: [
           { role: "system", content: "You are Saqfi's finance advisor for a football club. Answer only from the JSON facts. Amounts are KWD. Be short and concrete (max 4 sentences). You give advice only and never claim to have changed anything. " +
-            (lang === "ar" ? "Reply in Kuwaiti Arabic." : "Reply in English.") },
+            (lang === "ar" ? "Reply in Kuwaiti Arabic and write every amount as '1,234 د.ك'." : "Reply in English and write every amount as 'KWD 1,234'.") },
           { role: "user", content: `Facts: ${JSON.stringify(facts)}\n\nQuestion: ${question}` },
         ],
       }),

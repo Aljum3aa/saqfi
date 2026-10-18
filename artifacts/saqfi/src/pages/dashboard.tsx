@@ -3,7 +3,8 @@ import { AlertTriangle, CheckCircle2, Banknote, Receipt, Trophy, ShieldCheck, Ch
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine } from 'recharts';
 import type { Session } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
-import { kwd, kwdText, displayText } from '@/lib/saqfi';
+import { displayText } from '@/lib/saqfi';
+import { useCurrency } from '@/lib/currency';
 import { useClub, Money, PageSkeleton, ErrorPanel, ReadOnlyNote } from '@/components/shell';
 import { toneOf } from '@/components/category-bar';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,7 @@ function Panel({ title, action, children, className, testid }: { title: string; 
 
 export default function Dashboard({ session }: { session: Session }) {
   const { t, lang } = useLang();
+  const cur = useCurrency();
   const q = useClub();
   if (q.isLoading) return <PageSkeleton />;
   if (q.isError || !q.data) return <ErrorPanel onRetry={() => q.refetch()} />;
@@ -78,7 +80,7 @@ export default function Dashboard({ session }: { session: Session }) {
   const waiting = s.requests.filter((r) => r.status === 'pending').length;
   const Arrow = lang === 'ar' ? ChevronLeft : ChevronRight;
 
-  const trend0 = (s.trend ?? []).map((p) => ({ m: shortMonth(p.month, lang), v: p.amount }));
+  const trend0 = (s.trend ?? []).map((p) => ({ m: shortMonth(p.month, lang), v: cur.conv(p.amount) }));
   const trend = lang === 'ar' ? [...trend0].reverse() : trend0;   /* RTL: months read right to left */
   const trendAvg = trend0.length ? trend0.reduce((a, p) => a + p.v, 0) / trend0.length : 0;
 
@@ -129,7 +131,7 @@ export default function Dashboard({ session }: { session: Session }) {
                   className={cn('inline-flex items-center gap-2 rounded-full px-3 h-8', over ? 'bg-red-400/15 text-red-200' : 'bg-[#7FC8A9]/15 text-[#BFE6D4]')}>
                   {over ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                   {t('توقع نهاية الموسم', 'Season-end forecast')} <Money v={s.forecast} className="font-semibold" unit={false} />
-                  <span className="text-white/55">({over ? t(`فوق بـ ${kwd(gap, false)}`, `${kwd(gap, false)} over`) : t(`تحت بـ ${kwd(gap, false)}`, `${kwd(gap, false)} under`)})</span>
+                  <span className="text-white/55">({over ? t(`فوق بـ ${cur.text(gap, lang)}`, `${cur.text(gap, lang)} over`) : t(`تحت بـ ${cur.text(gap, lang)}`, `${cur.text(gap, lang)} under`)})</span>
                 </span>
               </div>
             </div>
@@ -150,7 +152,7 @@ export default function Dashboard({ session }: { session: Session }) {
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] items-start">
           <Panel title={t('الصرف الشهري', 'Monthly spending')} testid="card-trend"
-            action={trend0.length > 0 && <span className="inline-flex items-center gap-2 text-[13px] text-muted-foreground"><i className="w-4 border-t-2 border-dashed border-cap" />{t('المتوسط', 'Average')} <Money v={trendAvg} className="font-semibold text-foreground" /></span>}>
+            action={trend0.length > 0 && <span className="inline-flex items-center gap-2 text-[13px] text-muted-foreground"><i className="w-4 border-t-2 border-dashed border-cap" />{t('المتوسط', 'Average')} <Money v={trendAvg / (cur.conv(1) || 1)} className="font-semibold text-foreground" /></span>}>
             {trend.length === 0 ? (
               <div className="h-56 grid place-items-center text-center text-muted-foreground">
                 <div><Receipt className="h-5 w-5 mx-auto mb-2" />{t('ما في صرف مسجل للحين. أول مصروف بيظهر هني.', 'No spending yet. Your first expense will show here.')}</div>
@@ -164,7 +166,7 @@ export default function Dashboard({ session }: { session: Session }) {
                     <YAxis tickLine={false} axisLine={false} width={40} tick={{ fontSize: 12, fill: 'hsl(150 6% 37%)' }} orientation={lang === 'ar' ? 'right' : 'left'}
                       tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
                     <ReferenceLine y={trendAvg} stroke="#B8933F" strokeDasharray="4 4" strokeWidth={1.5} />
-                    <Tooltip cursor={{ fill: 'hsl(150 30% 94% / .6)' }} formatter={(v: number) => [kwdText(v, lang, false), t('الصرف', 'Spent')]}
+                    <Tooltip cursor={{ fill: 'hsl(150 30% 94% / .6)' }} formatter={(v: number) => [`${Math.round(v).toLocaleString('en-US')} ${cur.unit(lang)}`, t('الصرف', 'Spent')]}
                       contentStyle={{ borderRadius: 12, border: '1px solid hsl(100 8% 89%)', boxShadow: '0 8px 24px hsl(160 40% 12% / .08)', fontFamily: 'inherit', direction: lang === 'ar' ? 'rtl' : 'ltr' }} />
                     <Bar dataKey="v" fill="#0B6B4C" radius={[6, 6, 2, 2]} maxBarSize={36} animationDuration={500} />
                   </BarChart>

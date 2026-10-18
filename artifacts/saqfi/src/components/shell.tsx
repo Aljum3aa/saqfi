@@ -1,17 +1,18 @@
-import { useState, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogOut, UserRound, Languages, Home, Wallet, Users, MessageCircleQuestion, AlertCircle, RotateCw, ShieldCheck, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { LogOut, UserRound, Coins, Languages, Home, Wallet, Users, MessageCircleQuestion, AlertCircle, RotateCw, ShieldCheck, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import {
   useLogout, getGetSessionQueryKey, getGetClubStateQueryKey, useGetClubState, type Session, type ClubState,
 } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
+import { useCurrency, DISPLAY_CURRENCIES, KwdOnly, type DisplayCode } from '@/lib/currency';
 import { kwd } from '@/lib/saqfi';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { AdvisorDialog } from '@/components/advisor';
 
@@ -175,6 +176,13 @@ export function Shell({ session, children }: { session: Session; children: React
           <RailItem label={t('اسأل المستشار', 'Ask the advisor')} icon={MessageCircleQuestion} collapsed={collapsed} onClick={() => setAdvisor(true)} testid="button-advisor" />
 
           <div className="mt-auto space-y-1">
+            <CurrencyPicker align="start" trigger={(c) => (
+              <button type="button" data-testid="button-currency" aria-label={t('العملة', 'Currency')}
+                className={cn('relative flex w-full items-center gap-3 h-11 rounded-xl text-[14.5px] text-white/65 hover:text-white hover:bg-white/[.05] outline-none focus-visible:bg-white/[.07]', collapsed ? 'justify-center' : 'px-3')}>
+                <Coins className="h-[19px] w-[19px] shrink-0" strokeWidth={1.8} />
+                {!collapsed && <><span className="truncate">{t('العملة', 'Currency')}</span><span className="ms-auto num text-[12px] rounded-md bg-white/10 px-1.5 py-0.5">{c}</span></>}
+              </button>
+            )} />
             <RailItem label={lang === 'ar' ? 'English' : 'العربية'} icon={Languages} collapsed={collapsed} onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} testid="button-lang" />
             <RailItem label={collapsed ? t('توسيع القائمة', 'Expand menu') : t('تصغير القائمة', 'Collapse menu')} icon={Collapse} collapsed={collapsed} onClick={toggleRail} testid="button-rail" />
             <div className={cn('mt-3 pt-4 border-t border-white/10 flex items-center gap-3', collapsed && 'flex-col')}>
@@ -201,6 +209,11 @@ export function Shell({ session, children }: { session: Session; children: React
           <div className="mx-auto max-w-[1200px] px-4 md:px-6 h-16 flex items-center gap-2">
             <ClubId s={s} />
             <div className="ms-auto flex items-center gap-1">
+              <CurrencyPicker trigger={(c) => (
+                <button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-2.5 text-[13px] font-semibold num hover:bg-muted" aria-label={t('العملة', 'Currency')} data-testid="button-currency-mobile">
+                  <Coins className="h-4 w-4 text-muted-foreground" />{c}
+                </button>
+              )} />
               {!isPlayer && (
                 <button onClick={() => setAdvisor(true)} data-testid="button-advisor-mobile" aria-label={t('اسأل المستشار', 'Ask the advisor')}
                   className="inline-flex h-11 w-11 items-center justify-center rounded-xl hover:bg-muted">
@@ -257,6 +270,36 @@ export function Shell({ session, children }: { session: Session; children: React
   );
 }
 
+/** Display-currency picker. The ledger stays in KWD; amounts are shown converted at today's rate. */
+export function CurrencyPicker({ trigger, align = 'end' }: { trigger: (label: string) => ReactNode; align?: 'start' | 'end' }) {
+  const { t, lang } = useLang();
+  const cur = useCurrency();
+  return (
+    <DropdownMenu dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <DropdownMenuTrigger asChild>{trigger(cur.code)}</DropdownMenuTrigger>
+      <DropdownMenuContent align={align} className="w-60 max-h-[60vh] overflow-y-auto">
+        <DropdownMenuLabel className="text-[12px] font-normal text-muted-foreground">{t('عرض المبالغ بـ', 'Show amounts in')}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={cur.code} onValueChange={(v) => cur.setCode(v as DisplayCode)}>
+          {DISPLAY_CURRENCIES.map((c) => (
+            <DropdownMenuRadioItem key={c.code} value={c.code} data-testid={`currency-${c.code}`}>
+              <span className="flex-1">{t(c.nameAr, c.nameEn)}</span><span className="num text-muted-foreground text-[12px]">{c.code}</span>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        {cur.code !== 'KWD' && (
+          <>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-[12px] text-muted-foreground leading-relaxed">
+              {cur.failed ? t('سعر الصرف مو متوفر الحين، نعرض بالدينار.', 'Rate unavailable right now, showing KWD.')
+                : t('السجلات محفوظة بالدينار، والعرض بسعر اليوم.', 'Records stay in KWD; shown at today\'s rate.')}
+            </div>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 /** Sub-navigation inside a section: a quiet underline tab row, scrollable on small screens. */
 export function SectionTabs() {
   const { t } = useLang();
@@ -298,12 +341,16 @@ export function PageHead({ title, action }: { title: string; sub?: string; actio
 }
 
 /** exact: show 3 decimals only when the value carries fils. Default: whole dinars. */
-export function Money({ v, className, unit = true, exact = false }: { v: number; className?: string; unit?: boolean; exact?: boolean }) {
-  const { t } = useLang();
+export function Money({ v, className, unit = true, exact = false, raw = false }: { v: number; className?: string; unit?: boolean; exact?: boolean; raw?: boolean }) {
+  const { lang } = useLang();
+  const cur = useCurrency();
+  const kwOnly = useContext(KwdOnly);
+  const kw = raw || kwOnly || cur.shown === 'KWD';   /* raw: an amount being entered or booked, always KWD */
+  const val = kw ? v : cur.conv(v);
   return (
     <span className={cn('whitespace-nowrap', className)}>
-      <span className="num font-display">{v < 0 ? '-' : ''}{kwd(Math.abs(v), exact)}</span>
-      {unit && <span className="text-[0.62em] font-medium text-muted-foreground ms-1.5">{t('د.ك', 'KWD')}</span>}
+      <span className="num font-display">{val < 0 ? '-' : ''}{kwd(Math.abs(val), kw ? exact : false)}</span>
+      {unit && <span className="text-[0.62em] font-medium text-muted-foreground ms-1.5">{kw ? (lang === 'ar' ? 'د.ك' : 'KWD') : cur.unit(lang)}</span>}
     </span>
   );
 }
