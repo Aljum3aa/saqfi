@@ -11,4 +11,5 @@ export type ApprovalRequestReason = typeof ApprovalRequestReason[keyof typeof Ap
 export const ApprovalRequestReason = {
   threshold: 'threshold',
   cap: 'cap',
+  reserve: 'reserve',
 } as const;

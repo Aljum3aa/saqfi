@@ -187,6 +187,20 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Message"}
+  /saqfi/reserve-requests:
+    post:
+      operationId: createReserveRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ReserveRequestInput"}
+      responses:
+        "201":
+          description: Sent to the president
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
   /saqfi/requests/{id}/decision:
     post:
       operationId: decideRequest
@@ -441,6 +455,13 @@ components:
             outstanding: {type: number}
             pendingBonus: {type: number}
             pendingFine: {type: number}
+    ReserveRequestInput:
+      type: object
+      required: [categoryId, amount, description]
+      properties:
+        categoryId: {type: string}
+        amount: {type: number, exclusiveMinimum: 0}
+        description: {type: string, minLength: 2}
     ExpenseInput:
       type: object
       required: [categoryId, amount, description, date]
@@ -611,7 +632,7 @@ components:
         description: {type: string}
         date: {type: string}
         status: {type: string, enum: [pending, approved, rejected]}
-        reason: {type: string, enum: [threshold, cap]}
+        reason: {type: string, enum: [threshold, cap, reserve]}
         requestedAt: {type: string}
         decidedAt: {type: string}
         note: {type: string}

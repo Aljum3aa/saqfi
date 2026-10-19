@@ -21,6 +21,7 @@ import Approvals from '@/pages/approvals';
 import Audit from '@/pages/audit';
 import Market from '@/pages/market';
 import Payments from '@/pages/payments';
+import Afford from '@/pages/afford';
 import InvoicePage from '@/pages/invoice';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5000 } } });
@@ -67,6 +68,7 @@ function Router({ session }: { session: Session }) {
         <Route path="/audit">{() => <Audit session={session} />}</Route>
         <Route path="/market">{() => <Market session={session} />}</Route>
         <Route path="/payments">{() => <Payments session={session} />}</Route>
+        <Route path="/afford">{() => <Afford session={session} />}</Route>
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

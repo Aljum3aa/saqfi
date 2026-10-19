@@ -207,7 +207,7 @@ export default function Dashboard({ session }: { session: Session }) {
                   {s.insights.map((i) => (
                     <li key={i.id} className="flex gap-2.5 text-[14px] leading-relaxed">
                       <Info className={cn('h-4 w-4 mt-1 shrink-0', i.tone === 'bad' ? 'text-destructive' : i.tone === 'warn' ? 'text-warning' : 'text-primary')} />
-                      <span>{t(i.message, i.messageEn)}</span>
+                      <span>{t(i.message, i.messageEn)}{i.id === 'signing-room' && <> <Link href="/afford" className="font-semibold text-primary hover:underline whitespace-nowrap" data-testid="link-afford">{t('جرّب «نقدر عليه؟»', 'Try «Can we afford him?»')}</Link></>}</span>
                     </li>
                   ))}
                 </ul>

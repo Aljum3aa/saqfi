@@ -1,7 +1,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Banknote, Receipt, Download, Send, ArrowLeftRight } from 'lucide-react';
-import { useCreateExpense, useCreateRequest, useGetRates, getGetRatesQueryKey, getGetClubStateQueryKey, type Session, type ClubState } from '@workspace/api-client-react';
+import { useCreateExpense, useCreateRequest, useCreateReserveRequest, useGetRates, getGetRatesQueryKey, getGetClubStateQueryKey, type Session, type ClubState } from '@workspace/api-client-react';
 import { foreignLabel } from '@/pages/approvals';
 import { useLang } from '@/lib/i18n';
 import { apiErr, kwd, dateLabel, transactionDescription, validAmount, DEC3, type ApiErr } from '@/lib/saqfi';
@@ -127,6 +127,12 @@ function ExpenseDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange:
       onError: (e) => setErr(apiErr(e, lang)),
     },
   });
+  const moveReq = useCreateReserveRequest({
+    mutation: {
+      onSuccess: () => { qc.invalidateQueries({ queryKey: getGetClubStateQueryKey() }); toast({ title: t('انرسل طلب النقل لرئيس النادي', 'Transfer request sent to the club president'), description: t('بعد موافقته يزيد البند وتقدر تسجّل المصروف.', 'Once approved the category grows and you can record the expense.') }); setErr(null); onOpenChange(false); },
+      onError: (e) => setErr(apiErr(e, lang)),
+    },
+  });
   const rates = useGetRates({ query: { queryKey: getGetRatesQueryKey(), enabled: open && f.currency !== 'KWD', staleTime: 30 * 60 * 1000 } });
   const rate = f.currency === 'KWD' ? 1 : rates.data?.rates?.[f.currency];
   const c = s.categories.find((x) => x.id === f.categoryId);
@@ -192,12 +198,37 @@ function ExpenseDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange:
           {descShort && <p>{t('الوصف لازم حرفين على الأقل.', 'Description needs at least 2 characters.')}</p>}
         </div>
         {err && <ErrorBox msg={err.msg} exceeded={err.exceeded} op={t('المصروف', 'The expense')} />}
-        {(over || err?.exceeded !== undefined) && ok && (
-          <Button variant="outline" className="rounded-xl h-11 w-full border-cap/60" disabled={request.isPending} data-testid="button-request-approval"
-            onClick={() => { setErr(null); request.mutate({ data: payload() }); }}>
-            <Send className="h-4 w-4 rtl:-scale-x-100" />{t('اطلب موافقة الرئيس عليه', 'Ask the president to approve it')}
-          </Button>
-        )}
+        {(over || err?.exceeded !== undefined) && ok && c && (() => {
+          /* Over the cap: never a dead end — two clear next steps (instructor feedback 2026-10-19). */
+          const short = Math.round(Math.max(amt - c.remaining, err?.exceeded ?? 0) * 1000) / 1000;
+          const res = s.categories.find((x) => x.id === 'reserve');
+          const resLeft = res ? res.remaining : 0;
+          const canMove = !!res && c.id !== 'reserve' && resLeft >= short;
+          return (
+            <div className="rounded-xl border border-border p-4 space-y-3" data-testid="card-next-steps">
+              <div className="text-[13px] font-semibold text-muted-foreground">{t('الخطوة الجاية', 'Next step')}</div>
+              <div>
+                <Button className="rounded-xl h-11 w-full" disabled={request.isPending} data-testid="button-request-approval"
+                  onClick={() => { setErr(null); request.mutate({ data: payload() }); }}>
+                  <Send className="h-4 w-4 rtl:-scale-x-100" />{t('أرسله لرئيس النادي للموافقة', 'Send it to the club president for approval')}
+                </Button>
+                <p className="mt-1.5 text-[13px] text-muted-foreground">{t('إذا وافق، ينسجل المصروف وينتقل الفرق ', 'If approved, the expense is recorded and the difference of ')}<Money v={short} exact />{t(' من الاحتياطي تلقائياً.', ' moves from the reserve automatically.')}</p>
+              </div>
+              {res && c.id !== 'reserve' && (
+                <div>
+                  <Button variant="outline" className="rounded-xl h-11 w-full border-cap/60" disabled={!canMove || moveReq.isPending} data-testid="button-request-reserve"
+                    onClick={() => { setErr(null); moveReq.mutate({ data: { categoryId: c.id, amount: short, description: t(`لتغطية: ${f.description.trim()}`, `To cover: ${f.description.trim()}`) } }); }}>
+                    {t('اطلب نقل ', 'Ask to move ')}<Money v={short} exact />{t(' من الاحتياطي أول', ' from the reserve first')}
+                  </Button>
+                  <p className="mt-1.5 text-[13px] text-muted-foreground">
+                    {canMove ? <>{t('المتاح في الاحتياطي ', 'Reserve available ')}<Money v={resLeft} />{t('. بعد موافقة الرئيس يزيد سقف البند وتسجّل المصروف بنفسك.', '. Once the president approves, the cap grows and you record it yourself.')}</>
+                      : <span className="text-destructive">{t('الاحتياطي ما يكفي (المتاح ', 'The reserve is not enough (')}<Money v={resLeft} />{t(').', ' available).')}</span>}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <Button variant="outline" className="rounded-xl h-11 px-6" onClick={() => onOpenChange(false)}>{t('إلغاء', 'Cancel')}</Button>
           <Button className="rounded-xl h-11 px-6" disabled={!ok || create.isPending} data-testid="button-submit-expense"

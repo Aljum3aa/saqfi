@@ -75,6 +75,14 @@ export type Contract = ContractInput & {
   pendingFine: number;
 };
 
+export interface ReserveRequestInput {
+  categoryId: string;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /** @minLength 2 */
+  description: string;
+}
+
 export interface ExpenseInput {
   categoryId: string;
   /** @exclusiveMinimum 0 */
@@ -212,6 +220,7 @@ export type ApprovalRequestReason = typeof ApprovalRequestReason[keyof typeof Ap
 export const ApprovalRequestReason = {
   threshold: 'threshold',
   cap: 'cap',
+  reserve: 'reserve',
 } as const;
 
 export interface ApprovalRequest {

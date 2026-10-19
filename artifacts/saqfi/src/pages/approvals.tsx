@@ -54,7 +54,8 @@ export default function Approvals({ session }: { session: Session }) {
         <div className="grid gap-4 md:grid-cols-2 mb-8">
           {pending.map((r) => {
             const c = cat(r.categoryId);
-            const short = c ? Math.max(0, r.amount - c.remaining) : 0;
+            const isMove = r.reason === 'reserve';
+            const short = c && !isMove ? Math.max(0, r.amount - c.remaining) : 0;
             const reserve = cat('reserve');
             return (
               <article key={r.id} className="panel p-5" data-testid={`card-request-${r.id}`}>
@@ -63,11 +64,19 @@ export default function Approvals({ session }: { session: Session }) {
                     <div className="font-semibold text-[17px]">{r.description}</div>
                     <div className="text-[13px] text-muted-foreground mt-0.5">{c ? t(c.name, c.nameEn) : r.categoryId}، <span className="num">{dateLabel(r.date, lang)}</span></div>
                   </div>
-                  <Chip tone={r.reason === 'cap' ? 'bad' : 'gold'}>{r.reason === 'cap' ? t('يتعدى السقف', 'Over cap') : t('مبلغ كبير', 'Large amount')}</Chip>
+                  <Chip tone={r.reason === 'cap' ? 'bad' : 'gold'}>{r.reason === 'cap' ? t('يتعدى السقف', 'Over cap') : isMove ? t('نقل من الاحتياطي', 'Reserve transfer') : t('مبلغ كبير', 'Large amount')}</Chip>
                 </div>
                 <Money v={r.amount} exact className="block mt-4 font-display text-[30px] font-semibold tracking-tight" />
                 {foreignLabel(r) && <div className="text-[13px] text-muted-foreground">{t('المبلغ الأصلي ', 'Original ')}<span className="num" dir="ltr">{foreignLabel(r)}</span></div>}
-                {c && (
+                {c && isMove && (
+                  <div className="mt-4 rounded-xl p-3.5 space-y-0.5 text-[14px] bg-muted/70" data-testid={`card-move-${r.id}`}>
+                    <KV k={t('من', 'From')} v={t('الاحتياطي', 'Reserve')} />
+                    <KV k={t('إلى', 'To')} v={t(c.name, c.nameEn)} />
+                    {reserve && <KV k={t('المتاح في الاحتياطي', 'Reserve available')} v={<Money v={reserve.remaining} exact className={reserve.remaining < r.amount ? 'text-destructive' : ''} />} />}
+                    <KV k={t('سقف البند بعد النقل', 'Category cap after')} strong v={<Money v={c.cap + r.amount} exact />} />
+                  </div>
+                )}
+                {c && !isMove && (
                   <div className={cn('mt-4 rounded-xl p-3.5 space-y-0.5 text-[14px]', short > 0 ? 'bg-warning/[.08]' : 'bg-muted/70')}>
                     <KV k={t('المتاح في البند', 'Available in category')} v={<Money v={c.remaining} exact />} />
                     {short > 0 && <KV k={t('بينتقل من الاحتياطي', 'Moves from reserve')} strong v={<Money v={short} exact />} />}

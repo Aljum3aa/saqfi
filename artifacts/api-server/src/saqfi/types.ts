@@ -28,7 +28,7 @@ export type Match = {
 export type BonusRules = { win: number; draw: number };
 export type ApprovalRequest = {
   id: string; categoryId: string; amount: number; description: string; date: string;
-  status: "pending" | "approved" | "rejected"; reason: "threshold" | "cap";
+  status: "pending" | "approved" | "rejected"; reason: "threshold" | "cap" | "reserve";
   requestedAt: string; decidedAt?: string; note?: string; fromReserve?: number;
   currency?: string; originalAmount?: number; rate?: number;
 };

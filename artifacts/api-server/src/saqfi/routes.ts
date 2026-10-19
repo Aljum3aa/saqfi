@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import {
   LoginDemoBody, SaveBudgetBody, CreateContractBody, CreateExpenseBody, RunPayrollBody,
   CreateMatchBody, CreateAdjustmentBody, SaveBonusRulesBody, SaveApprovalThresholdBody,
-  CreateRequestBody, DecideRequestBody, AskAdvisorBody, StartCheckoutBody, ConfirmPaymentBody, WithdrawWalletBody,
+  CreateRequestBody, CreateReserveRequestBody, DecideRequestBody, AskAdvisorBody, StartCheckoutBody, ConfirmPaymentBody, WithdrawWalletBody,
   CreateInvoiceBody, RequestAdvanceBody, CheckoutPublicInvoiceBody, ConfirmPublicInvoiceBody,
 } from "@workspace/api-zod";
 import { ClubError, type Role, type Contract, type Club, type Invoice } from "./types";
@@ -241,6 +241,20 @@ saqfiRouter.post("/requests/:id/decision", only("president"), async (req, res) =
     r.note = note?.trim().slice(0, 250) || undefined;
     const cat = club.categories.find(c => c.id === r.categoryId);
     if (!cat) throw new ClubError(404, "الفئة غير موجودة", "Category not found.");
+    if (approve && r.reason === "reserve") {
+      // A reserve move: the president raises the category cap by taking the same amount from the reserve. No expense is posted.
+      const reserve = club.categories.find(c => c.id === "reserve");
+      const reserveLeft = reserve ? fils(categories(club).find(c => c.id === "reserve")!.remaining) : 0;
+      if (!reserve || reserveLeft < fils(r.amount))
+        throw new ClubError(409, `الاحتياطي ما يكفي (المتاح ${fmt(kwd(Math.max(0, reserveLeft)))} د.ك)`,
+          `The reserve cannot cover it (KWD ${fmt(kwd(Math.max(0, reserveLeft)))} available).`, kwd(fils(r.amount) - Math.max(0, reserveLeft)));
+      reserve.cap = kwd(fils(reserve.cap) - fils(r.amount));
+      cat.cap = kwd(fils(cat.cap) + fils(r.amount));
+      r.status = "approved"; r.fromReserve = r.amount;
+      log(club, req, "approve", `موافقة: نقل ${fmt(r.amount)} د.ك من الاحتياطي إلى «${cat.name}»`, `Approved: KWD ${fmt(r.amount)} moved from the reserve to ${cat.nameEn}`);
+      message = `تمت الموافقة ونقلنا ${fmt(r.amount)} د.ك من الاحتياطي إلى «${cat.name}»`;
+      return;
+    }
     if (!approve) {
       r.status = "rejected";
       log(club, req, "reject", `رفض طلب: ${r.description} ${fmt(r.amount)} د.ك`, `Rejected: ${r.description} KWD ${fmt(r.amount)}`);
@@ -376,6 +390,28 @@ saqfiRouter.post("/requests", async (req, res) => {
     log(club, req, "request", `طلب تجاوز سقف: ${e.description} ${fmt(e.amount)} د.ك`, `Over-cap request: ${e.description} KWD ${fmt(e.amount)}`);
   });
   res.status(201).json({ message: "انرسل الطلب لرئيس النادي", pending: true });
+});
+/** Ask the president to move money from the reserve into a category (e.g. before a signing or a big expense). */
+saqfiRouter.post("/reserve-requests", async (req, res) => {
+  const input = CreateReserveRequestBody.parse(req.body);
+  money(input.amount);
+  const description = input.description.trim();
+  if (description.length < 2 || description.length > 200) throw new ClubError(400, "اكتب السبب", "Enter a reason.");
+  await mutateClub(club => {
+    const cat = club.categories.find(c => c.id === input.categoryId);
+    if (!cat || cat.id === "reserve") throw new ClubError(400, "اختر البند اللي تبي تنقل له", "Choose the category to move money into.");
+    const reserveLeft = club.categories.some(c => c.id === "reserve") ? fils(categories(club).find(c => c.id === "reserve")!.remaining) : 0;
+    if (reserveLeft < fils(input.amount))
+      throw new ClubError(409, `الاحتياطي ما يكفي (المتاح ${fmt(kwd(Math.max(0, reserveLeft)))} د.ك)`,
+        `The reserve cannot cover it (KWD ${fmt(kwd(Math.max(0, reserveLeft)))} available).`, kwd(fils(input.amount) - Math.max(0, reserveLeft)));
+    if (club.requests.some(r => r.status === "pending" && r.reason === "reserve" && r.categoryId === cat.id && fils(r.amount) === fils(input.amount)))
+      throw new ClubError(409, "نفس الطلب ينتظر قرار الرئيس", "The same request is already waiting for the president.");
+    club.requests.push({ id: randomUUID(), categoryId: cat.id, amount: input.amount, description, date: today(),
+      status: "pending", reason: "reserve", requestedAt: new Date().toISOString() });
+    log(club, req, "request", `طلب نقل ${fmt(input.amount)} د.ك من الاحتياطي إلى «${cat.name}»: ${description}`,
+      `Requested KWD ${fmt(input.amount)} from the reserve to ${cat.nameEn}: ${description}`);
+  });
+  res.status(201).json({ message: "انرسل طلب النقل لرئيس النادي", pending: true });
 });
 saqfiRouter.put("/bonus-rules", async (req, res) => {
   const rules = SaveBonusRulesBody.parse(req.body);

@@ -158,7 +158,7 @@ export const GetClubStateResponse = zod.object({
   "description": zod.string(),
   "date": zod.string(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
-  "reason": zod.enum(['threshold', 'cap']),
+  "reason": zod.enum(['threshold', 'cap', 'reserve']),
   "requestedAt": zod.string(),
   "decidedAt": zod.string().optional(),
   "note": zod.string().optional(),
@@ -439,6 +439,24 @@ export const CreateRequestBody = zod.object({
 })
 
 export const CreateRequestResponse = zod.object({
+  "message": zod.string(),
+  "pending": zod.boolean().optional()
+})
+
+
+export const createReserveRequestBodyAmountExclusiveMin = 0;
+
+export const createReserveRequestBodyDescriptionMin = 2;
+
+
+
+export const CreateReserveRequestBody = zod.object({
+  "categoryId": zod.string(),
+  "amount": zod.number().gt(createReserveRequestBodyAmountExclusiveMin),
+  "description": zod.string().min(createReserveRequestBodyDescriptionMin)
+})
+
+export const CreateReserveRequestResponse = zod.object({
   "message": zod.string(),
   "pending": zod.boolean().optional()
 })

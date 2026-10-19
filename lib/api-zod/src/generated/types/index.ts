@@ -66,6 +66,7 @@ export * from './publicInvoiceGateway';
 export * from './publicInvoiceStatus';
 export * from './rates';
 export * from './ratesRates';
+export * from './reserveRequestInput';
 export * from './session';
 export * from './thresholdInput';
 export * from './transaction';

@@ -105,8 +105,11 @@ function ContractDialog({ open, onOpenChange, s }: { open: boolean; onOpenChange
   const { t, lang } = useLang();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const qs = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const pre = { salary: qs?.get('salary') ?? '', start: qs?.get('start') ?? '' };   /* from «نقدر عليه؟» */
   const blank = { name: '', nameEn: '', position: 'MF', salary: '', start: s.today > s.seasonStart ? s.today.slice(0, 10) : s.seasonStart, end: s.seasonEnd };
-  const [f, setF] = useState(blank);
+  const first = { ...blank, salary: /^\d+(\.\d{1,3})?$/.test(pre.salary) ? pre.salary : '', start: /^\d{4}-\d{2}-\d{2}$/.test(pre.start) && pre.start >= s.seasonStart && pre.start <= s.seasonEnd ? pre.start : blank.start };
+  const [f, setF] = useState(first);
   const [err, setErr] = useState<ApiErr | null>(null);
   const create = useCreateContract({
     mutation: {

@@ -1,9 +1,9 @@
 import { useContext, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogOut, UserRound, Coins, Languages, Home, Wallet, Users, MessageCircleQuestion, AlertCircle, RotateCw, ShieldCheck, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { LogOut, UserRound, Coins, Languages, Home, Wallet, Users, MessageCircleQuestion, AlertCircle, RotateCw, ShieldCheck, PanelRightClose, PanelRightOpen, ArrowLeftRight } from 'lucide-react';
 import {
-  useLogout, getGetSessionQueryKey, getGetClubStateQueryKey, useGetClubState, type Session, type ClubState,
+  useLogout, useLoginDemo, getGetSessionQueryKey, getGetClubStateQueryKey, useGetClubState, type Session, type ClubState,
 } from '@workspace/api-client-react';
 import { useLang } from '@/lib/i18n';
 import { useCurrency, DISPLAY_CURRENCIES, KwdOnly, type DisplayCode } from '@/lib/currency';
@@ -72,6 +72,7 @@ export const SECTIONS: Section[] = [
   ] },
   { id: 'team', ar: 'الفريق', en: 'Squad', icon: Users, subs: [
     { href: '/contracts', ar: 'العقود', en: 'Contracts' },
+    { href: '/afford', ar: 'نقدر عليه؟', en: 'Can we afford him?' },
     { href: '/payroll', ar: 'الرواتب', en: 'Payroll' },
     { href: '/bonuses', ar: 'المكافآت والغرامات', en: 'Bonuses & fines' },
     { href: '/market', ar: 'سوق الانتقالات', en: 'Transfer market' },
@@ -154,6 +155,21 @@ export function Shell({ session, children }: { session: Session; children: React
     },
   });
   const isPlayer = session.role === 'player';
+  /* Demo story (instructor feedback): the manager sends an over-cap request, then switches to the president to approve it — no sign-out. */
+  const other = session.role === 'manager' ? 'president' : 'manager';
+  const otherLabel = other === 'president' ? t('التبديل إلى رئيس النادي', 'Switch to club president') : t('التبديل إلى المدير المالي', 'Switch to finance manager');
+  const switchRole = useLoginDemo({
+    mutation: {
+      onSuccess: (next) => {
+        qc.setQueryData(getGetSessionQueryKey(), next);
+        qc.invalidateQueries({ queryKey: getGetSessionQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetClubStateQueryKey() });
+        setLoc(next.role === 'president' && (s?.requests ?? []).some((r) => r.status === 'pending') ? '/approvals' : '/dashboard');
+        toast({ title: roleLabel(next.role, t) });
+      },
+      onError: () => toast({ variant: 'destructive', title: t('ما قدرنا نبدّل الحساب. حاول مرة ثانية.', 'Could not switch accounts. Please try again.') }),
+    },
+  });
   const s = club.data as ClubState | undefined;
   const current = sectionOf(loc);
   const waiting = s?.requests?.filter((r) => r.status === 'pending').length ?? 0;
@@ -187,6 +203,7 @@ export function Shell({ session, children }: { session: Session; children: React
                 {!collapsed && <><span className="truncate">{t('العملة', 'Currency')}</span><span className="ms-auto num text-[12px] rounded-md bg-white/10 px-1.5 py-0.5">{c}</span></>}
               </button>
             )} />
+            <RailItem label={otherLabel} icon={ArrowLeftRight} collapsed={collapsed} onClick={() => switchRole.mutate({ data: { role: other } })} testid="button-switch-role" />
             <RailItem label={lang === 'ar' ? 'English' : 'العربية'} icon={Languages} collapsed={collapsed} onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} testid="button-lang" />
             <RailItem label={collapsed ? t('توسيع القائمة', 'Expand menu') : t('تصغير القائمة', 'Collapse menu')} icon={Collapse} collapsed={collapsed} onClick={toggleRail} testid="button-rail" />
             <div className={cn('mt-3 pt-4 border-t border-white/10 flex items-center gap-3', collapsed && 'flex-col')}>
@@ -236,6 +253,7 @@ export function Shell({ session, children }: { session: Session; children: React
                     {modeText && <span className="block text-[12px] text-muted-foreground">{modeText}</span>}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {!isPlayer && <DropdownMenuItem onSelect={() => switchRole.mutate({ data: { role: other } })} data-testid="button-switch-role-mobile"><ArrowLeftRight className="h-4 w-4" />{otherLabel}</DropdownMenuItem>}
                   <DropdownMenuItem onSelect={() => setLang(lang === 'ar' ? 'en' : 'ar')} data-testid="button-lang-mobile"><Languages className="h-4 w-4" />{lang === 'ar' ? 'English' : 'العربية'}</DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => logout.mutate()} data-testid="button-logout-mobile"><LogOut className="h-4 w-4 rtl:rotate-180" />{t('تسجيل الخروج', 'Sign out')}</DropdownMenuItem>
                 </DropdownMenuContent>
