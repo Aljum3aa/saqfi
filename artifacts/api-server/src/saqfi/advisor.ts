@@ -50,6 +50,9 @@ export function insights(s: State) {
   return out;
 }
 
+/** Questions ruleAnswer answers precisely (same patterns as its branches below). */
+const RULE_TOPICS = /وق[ّ]?ع|توقيع|لاعب جديد|sign|contract|عقد|يخلص|يكفي|متى|run out|last|وين|أكثر|اكثر|most|where|biggest|رواتب|راتب|payroll|salar/;
+
 /** Deterministic answers from the club's figures. Used when no AI key is set, and as a fallback. */
 export function ruleAnswer(question: string, s: State): Answer {
   const q = digits(question.toLowerCase());
@@ -116,6 +119,9 @@ export async function advise(question: string, s: State, lang: "ar" | "en"): Pro
   const keyless = !base || !key;
   const url = keyless ? "https://text.pollinations.ai/openai" : `${base}/chat/completions`;
   if (keyless && process.env.SAQFI_AI_OFF === "1") return ruleAnswer(question, s);
+  // Without a key the free model is slow and guesses ("1,500 matches no item"); questions the rule engine
+  // covers (signing a salary, runway, top spending, payroll) get its exact answer at once (Vercel, 2026-10-20).
+  if (keyless && RULE_TOPICS.test(digits(question.toLowerCase()))) return ruleAnswer(question, s);
   const facts = {
     club: s.clubEn, season: `${s.seasonStart}..${s.seasonEnd}`, today: s.today, totalBudget: s.totalBudget,
     spent: s.spent, reserved: s.committed, available: s.remaining, forecast: s.forecast, monthsLeft: monthsLeft(s),
@@ -125,7 +131,7 @@ export async function advise(question: string, s: State, lang: "ar" | "en"): Pro
   };
   try {
     const res = await fetch(url, {
-      method: "POST", signal: AbortSignal.timeout(30000),
+      method: "POST", signal: AbortSignal.timeout(12000),   // under the 30 s Vercel function limit, so the rules fallback still answers
       headers: keyless ? { "content-type": "application/json" } : { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({
         model: process.env.SAQFI_AI_MODEL ?? (keyless ? "openai" : openrouter ? "openrouter/free" : "gpt-4o-mini"), temperature: 0.2, max_tokens: 400,
